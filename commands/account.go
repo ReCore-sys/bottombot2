@@ -322,15 +322,32 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 					ctx.RespondText("Please specify an amount to sell.")
 					return
 				}
-				if regexp.MustCompile(`^\d+$`).MatchString(args[1]) == false {
-					ctx.RespondText("Please specify a valid amount.")
-					return
-				}
-				amnt, err := strconv.Atoi(args[1])
-				if err != nil {
-					log.Println(err)
-					ctx.RespondText("Please specify a valid amount.")
-					return
+				var amnt int
+				if args[1] == "all" {
+					if db.DoesExist(ctx.Event.Author.ID) == false { // Check if the user already has an account
+						ctx.RespondText("You don't have an account!")
+						return
+					}
+					user, err := db.Get(ctx.Event.Author.ID)
+					if err != nil {
+						log.Println(err)
+					}
+					if user.Stocks < 1 {
+						ctx.RespondText("You don't have any stocks to sell!")
+						return
+					}
+					amnt = user.Stocks
+				} else {
+					if regexp.MustCompile(`^\d+$`).MatchString(args[1]) == false {
+						ctx.RespondText("Please specify a valid amount.")
+						return
+					}
+					amnt, err = strconv.Atoi(args[1])
+					if err != nil {
+						log.Println(err)
+						ctx.RespondText("Please specify a valid amount.")
+						return
+					}
 				}
 				if amnt < 1 {
 					ctx.RespondText("You must sell at least 1 stock.")

@@ -8,7 +8,7 @@ import (
 	raven "github.com/ReCore-sys/bottombot2/libs/database"
 )
 
-// Price The global price struct.
+// Price The global price struct. Start with a price of 50.
 var Price = 50.0
 
 // UpdatePrice updates the global price variable.
@@ -18,9 +18,9 @@ func UpdatePrice(price float64) {
 
 // Pricecalc calculates the price of a stock
 func Pricecalc(users []raven.User) float64 {
-	price := 50.0
-	ratio := ratio(users)
-	price = 50 * ratio
+	price := 50.0         // Start with a price of 50
+	ratio := ratio(users) // Calculate the ratio of stocks to raw cash
+	price = 50 * ratio    // Multiply 50 by the ratio to get the new price
 	return price
 
 }
@@ -30,20 +30,22 @@ func RandomChoiceUsers(inp []raven.User) raven.User {
 	return inp[rand.Intn(len(inp))]
 }
 
+// ratio calculates the ratio of stocks to raw cash
 func ratio(inp []raven.User) float64 {
 	var totalCash, totalStocks float64
+	// Iterate through the users and add their cash and stocks to the total
 	for _, v := range inp {
 		totalCash += float64(v.Bal)
 		totalStocks += float64(v.Stocks)
 	}
 	if totalStocks == 0 {
-		totalStocks = 1
+		totalStocks = 1 // Prevent divide by zero
 	}
-	stocksval := (totalStocks * Price)
-	return totalCash / stocksval
+	stocksval := (totalStocks * Price) // Calculate the value of the stocks
+	return totalCash / stocksval       // Return the ratio of the two
 }
 
-// Createusers creates a slice of users.
+// Createusers creates a slice of users with random stats.
 func Createusers(amnt int) []raven.User {
 	var users []raven.User
 	for i := 0; i < amnt; i++ {

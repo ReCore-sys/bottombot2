@@ -1,0 +1,52 @@
+[
+    {
+        "id": 0,
+        "name": "Bronze",
+        "price": 0,
+        "color": [
+            205,
+            127,
+            50
+        ]
+    },
+    {
+        "id": 1,
+        "name": "Silver",
+        "price": 500,
+        "color": [
+            192,
+            192,
+            192
+        ]
+    },
+    {
+        "id": 2,
+        "name": "Gold",
+        "price": 1000,
+        "color": [
+            255,
+            215,
+            0
+        ]
+    },
+    {
+        "id": 3,
+        "name": "Platinum",
+        "price": 2500,
+        "color": [
+            255,
+            255,
+            255
+        ]
+    },
+    {
+        "id": 4,
+        "name": "Diamond",
+        "price": 5000,
+        "color": [
+            -1,
+            0,
+            0
+        ]
+    }
+]

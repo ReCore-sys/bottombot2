@@ -1,0 +1,54 @@
+- ID: boltor
+  Name: Boltor
+  Type: weapon
+  Description: FOR THE EMPREROR!
+  Rarity:
+    - 10
+    - 10
+  Damage:
+    - 6
+    - 6
+  OnUse: boltor // Just type out in this section what you want it to do so I can code it
+- ID: gapener
+  Name: The gapener
+  Type: weapon
+  Description: >-
+    "Thats a tight asshole you got there. It's be a shame if something were to happen to it..."
+
+    Reduces the max health of the enemy by 25%
+  Rarity:
+    - 30
+    - 30
+  Damage:
+    - 10
+    - 10
+  OnUse: gapener // Reduce the max health of the enemy by 25%
+- ID: Troll
+  Name: Trollage
+  Type: weapon
+  Description: >-
+    "You've been trolled, you've been trolled..."
+    The enemy skips their 1st attack
+  Rarity:
+    - 80
+    - 80
+  Damage:
+    - 20
+    - 20
+  OnUse: Trollage // Stuns the enemy, allowing for a second strike!
+
+- ID: sickle
+  Name: Reaper's Sickle
+  Type: weapon
+  Description: >-
+    "It humms with the rythm of death"
+    Also is very good at cutting bread
+
+    Deals more damage the more health the enemy has
+  Rarity:
+    - 20
+    - 35
+  Damage:
+    - 12
+    - 17
+  OnUse: reap // Damage multipled by percentage of enemy's health left. Ie, if the enemy has 50% health left, it will deal 150% of the damage

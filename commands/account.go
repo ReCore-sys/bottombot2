@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -16,9 +15,11 @@ import (
 	raven "github.com/ReCore-sys/bottombot2/libs/database"
 	"github.com/ReCore-sys/bottombot2/libs/image"
 	img "github.com/ReCore-sys/bottombot2/libs/image"
+	"github.com/ReCore-sys/bottombot2/libs/stocks"
 	"github.com/ReCore-sys/bottombot2/libs/utils"
 	"github.com/bwmarrin/discordgo"
 	"github.com/lus/dgc"
+	"gopkg.in/yaml.v2"
 )
 
 type rank struct {
@@ -54,13 +55,15 @@ func ratecheck(ctx *dgc.Ctx) bool {
 // EcoRoute is the router for the economy/account commands.
 func EcoRoute(router *dgc.Router) *dgc.Router {
 
-	// Read static/ranks.json and parse it into a rank struct
-	ranksFile, err := ioutil.ReadFile("static/ranks.json") // Read the ranks file
+	// Read static/ranks.yaml and parse it into a rank struct
+	ranksFile, err := ioutil.ReadFile("static/ranks.yaml") // Read the ranks file
 	if err != nil {
+
 		log.Fatal(err)
 	}
-	err = json.Unmarshal(ranksFile, &Ranks) // Parse the ranks file into the rank struct
+	err = yaml.Unmarshal(ranksFile, &Ranks) // Parse the ranks file into the rank struct
 	if err != nil {
+		println(1)
 		log.Println(err)
 	}
 	CFG := config.Config()
@@ -75,12 +78,12 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 			if err != nil {
 				log.Println(err)
 			}
-			args := ParseArgs(ctx)
+			args := utils.ParseArgs(ctx)
 			var target string
 			if len(args) == 0 {
 				target = ctx.Event.Message.Author.ID
 			} else {
-				target = ParsePing(args[0])
+				target = utils.ParsePing(args[0])
 			}
 			if db.DoesExist(target) { // Check if the user already has an account
 				acc := img.Account(target)
@@ -96,18 +99,19 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 						},
 					},
 				}
-				s.ChannelMessageSendComplex(ctx.Event.ChannelID, ms)
+				_, err = s.ChannelMessageSendComplex(ctx.Event.ChannelID, ms)
+				if err != nil {
+					log.Println(err)
+				}
 				go func() {
 					err = file.Close()
 					if err != nil {
-						println(1)
 						log.Println(err)
 					}
 				}()
 				go func() {
 					err = os.Remove(acc)
 					if err != nil {
-						println(2)
 						log.Println(err)
 					}
 				}()
@@ -121,7 +125,10 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 					if err != nil {
 						log.Println(err)
 					}
-					image.DownloadFile(currentuser.PFP, acc)
+					err = image.DownloadFile(currentuser.PFP, acc)
+					if err != nil {
+						log.Println(err)
+					}
 				}
 				file = nil
 			} else { // Create a new account
@@ -139,9 +146,15 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 					if err != nil {
 						log.Println(err)
 					}
-					ctx.RespondText("Account created!")
+					err = ctx.RespondText("Account created!")
+					if err != nil {
+						log.Println(err)
+					}
 				} else {
-					ctx.RespondText("This user either doesn't exist or they don't have an account!")
+					err = ctx.RespondText("This user either doesn't exist or they don't have an account!")
+					if err != nil {
+						log.Println(err)
+					}
 				}
 			}
 			if target == ctx.Event.Author.ID {
@@ -151,7 +164,10 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 						log.Println(err)
 					}
 					user.PFP = "https://cdn.discordapp.com/avatars/" + ctx.Event.Author.ID + "/" + ctx.Event.Message.Author.Avatar + ".png"
-					db.Update(user)
+					err = db.Update(user)
+					if err != nil {
+						log.Println(err)
+					}
 				}()
 			}
 			db.Close()
@@ -175,11 +191,14 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 					)
 				}
 			}
-			ctx.RespondEmbed(&discordgo.MessageEmbed{
+			err = ctx.RespondEmbed(&discordgo.MessageEmbed{
 				Title:       "Ranks",
 				Description: "Here are the ranks!",
 				Fields:      fields,
 			})
+			if err != nil {
+				log.Println(err)
+			}
 		}})
 	println("Registered command: ranks")
 
@@ -191,33 +210,51 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 		Handler: func(ctx *dgc.Ctx) {
 			if ratecheck(ctx) {
 				db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "users") // Create a RavenDB session
+				if err != nil {
+					log.Println(err)
+				}
 				GambleResponsesLose := []string{"Damn bro, chill", "LMAO your bank account", "Uhhh you ok there buddy?", "I think you might have a problem", "Maybe you shouldn't gamble that much..."}
 				GambleResponsesWin := []string{"Nice. But you won't win every time...", "Make sure it doesn't get out of hand", "Nice work"}
-				args := ParseArgs(ctx)
+				args := utils.ParseArgs(ctx)
 				if len(args) == 0 || args[0] == "" {
-					ctx.RespondText("Please specify an amount to gamble.")
+					err = ctx.RespondText("Please specify an amount to gamble.")
+					if err != nil {
+						log.Println(err)
+					}
 					return
 				}
-				if (regexp.MustCompile(`\d+$`).MatchString(args[0])) == false {
-					ctx.RespondText("Please specify a valid amount.")
+				if !(regexp.MustCompile(`\d+$`).MatchString(args[0])) {
+					err = ctx.RespondText("Please specify a valid amount.")
+					if err != nil {
+						log.Println(err)
+					}
 					return
 				}
 				amntint, err := strconv.Atoi(args[0])
 				amnt := float64(amntint)
 				if err != nil {
 					log.Println(err)
-					ctx.RespondText("Please specify a valid amount.")
+					err = ctx.RespondText("Please specify a valid amount.")
+					if err != nil {
+						log.Println(err)
+					}
 					return
 				}
 				if amnt < 10 {
-					ctx.RespondText("You must gamble at least $10.")
+					err = ctx.RespondText("You must gamble at least $10.")
+					if err != nil {
+						log.Println(err)
+					}
 					return
 				}
 				if err != nil {
 					log.Println(err)
 				}
-				if db.DoesExist(ctx.Event.Author.ID) == false { // Check if the user already has an account
-					ctx.RespondText("You don't have an account!")
+				if !db.DoesExist(ctx.Event.Author.ID) { // Check if the user already has an account
+					err = ctx.RespondText("You don't have an account!")
+					if err != nil {
+						log.Println(err)
+					}
 					return
 				}
 				user, err := db.Get(ctx.Event.Author.ID)
@@ -225,17 +262,26 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 					log.Println(err)
 				}
 				if user.Bal < amnt {
-					ctx.RespondText("You don't have enough money!")
+					err = ctx.RespondText("You don't have enough money!")
+					if err != nil {
+						log.Println(err)
+					}
 					return
 				}
 				rand.Seed(time.Now().UnixNano())
 				if rand.Intn(5) == 0 {
 					user.Bal += amnt * 3
-					ctx.RespondText("You won! You now have $" + utils.FormatPrice(user.Bal) + " (You won $" + fmt.Sprint(amnt*3) + ")\n " + utils.RandomChoiceStrings(GambleResponsesWin))
+					err = ctx.RespondText("You won! You now have $" + utils.FormatPrice(user.Bal) + " (You won $" + fmt.Sprint(amnt*3) + ")\n " + utils.RandomChoiceStrings(GambleResponsesWin))
+					if err != nil {
+						log.Println(err)
+					}
 				} else {
 					user.Bal -= amnt
-					ctx.RespondText("You lost! You now have $" + utils.FormatPrice(user.Bal) + " (You lost $" + fmt.Sprint(amnt) + ")\n" + utils.RandomChoiceStrings(GambleResponsesLose))
+					err = ctx.RespondText("You lost! You now have $" + utils.FormatPrice(user.Bal) + " (You lost $" + fmt.Sprint(amnt) + ")\n" + utils.RandomChoiceStrings(GambleResponsesLose))
 
+					if err != nil {
+						log.Println(err)
+					}
 				}
 				err = db.Update(user)
 				if err != nil {
@@ -243,150 +289,15 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 				}
 				db.Close()
 			} else {
-				ctx.RespondText("You're being rate limited!")
+				err = ctx.RespondText("You're being rate limited!")
+				if err != nil {
+					log.Println(err)
+				}
 			}
 		}})
 	println("Registered command: gamble")
 
-	router.RegisterCmd(&dgc.Command{
-		Name:        "stocks",
-		Description: "Buy and sell stocks",
-		Usage:       "stocks <buy/sell> <amount>",
-		Aliases:     []string{"stock", "stonks"},
-		Handler: func(ctx *dgc.Ctx) {
-			db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "users") // Create a RavenDB session
-			if err != nil {
-				log.Println(err)
-			}
-			args := ParseArgs(ctx)
-			users := db.GetAll()
-			if len(args) == 0 {
-				price := utils.Price
-				ctx.RespondText(fmt.Sprintf("The current price of a stock is $%.2f", price))
-			} else if args[0] == "buy" {
-				/**=======================
-				 *     If the user buys
-				 *========================**/
-				if regexp.MustCompile(`^\d+$`).MatchString(args[1]) == false {
-					ctx.RespondText("Please specify a valid amount.")
-					return
-				}
-				if len(args) == 1 {
-					ctx.RespondText("Please specify an amount to buy.")
-					return
-				}
-				amnt, err := strconv.Atoi(args[1])
-				if err != nil {
-					log.Println(err)
-					ctx.RespondText("Please specify a valid amount.")
-					return
-				}
-				if amnt < 1 {
-					ctx.RespondText("You must buy at least 1 stock.")
-					return
-				}
-				if db.DoesExist(ctx.Event.Author.ID) == false { // Check if the user already has an account
-					ctx.RespondText("You don't have an account!")
-					return
-				}
-				user, err := db.Get(ctx.Event.Author.ID)
-				if err != nil {
-					log.Println(err)
-				}
+	router = stocks.RegisterStocks(router)
 
-				var newprice float64
-				var userindex int
-				userindex = utils.IndexOfUsers(user, users)
-				newprice = utils.Price
-				/**---------------------------*
-				 *    ITERATION LETS GOOOOOOOO
-				 *----------------------------**/
-				for i := 0; i < amnt; i++ {
-					if user.Bal < newprice {
-						ctx.RespondText("You don't have enough money to buy " + fmt.Sprint(amnt) + " stocks!")
-						return
-					}
-					user.Bal -= utils.Price
-					user.Stocks++
-					users[userindex] = user
-					newprice = utils.Pricecalc(users)
-				}
-				ctx.RespondText("You now have " + fmt.Sprint(user.Stocks) + " stocks and $" + utils.FormatPrice(user.Bal) + " left.")
-				err = db.Update(user)
-				if err != nil {
-					log.Println(err)
-				}
-				utils.UpdatePrice(newprice)
-			} else if args[0] == "sell" {
-				if len(args) == 1 {
-					ctx.RespondText("Please specify an amount to sell.")
-					return
-				}
-				var amnt int
-				if args[1] == "all" {
-					if db.DoesExist(ctx.Event.Author.ID) == false { // Check if the user already has an account
-						ctx.RespondText("You don't have an account!")
-						return
-					}
-					user, err := db.Get(ctx.Event.Author.ID)
-					if err != nil {
-						log.Println(err)
-					}
-					if user.Stocks < 1 {
-						ctx.RespondText("You don't have any stocks to sell!")
-						return
-					}
-					amnt = user.Stocks
-				} else {
-					if regexp.MustCompile(`^\d+$`).MatchString(args[1]) == false {
-						ctx.RespondText("Please specify a valid amount.")
-						return
-					}
-					amnt, err = strconv.Atoi(args[1])
-					if err != nil {
-						log.Println(err)
-						ctx.RespondText("Please specify a valid amount.")
-						return
-					}
-				}
-				if amnt < 1 {
-					ctx.RespondText("You must sell at least 1 stock.")
-					return
-				}
-				if db.DoesExist(ctx.Event.Author.ID) == false { // Check if the user already has an account
-					ctx.RespondText("You don't have an account!")
-					return
-				}
-				user, err := db.Get(ctx.Event.Author.ID)
-				if err != nil {
-					log.Println(err)
-				}
-				if user.Stocks < amnt {
-					ctx.RespondText("You don't have enough stocks to sell.")
-					return
-				}
-				var newprice float64
-				var userindex int
-				userindex = utils.IndexOfUsers(user, users)
-				newprice = utils.Price
-				/**---------------------------*
-				 *    ITERATION LETS GOOOOOOOO
-				 *----------------------------**/
-				for i := 0; i < amnt; i++ {
-					user.Bal += newprice
-					user.Stocks--
-					users[userindex] = user
-					newprice = utils.Pricecalc(users)
-				}
-				db.Update(user)
-				utils.UpdatePrice(newprice)
-				ctx.RespondText("You now have " + fmt.Sprint(user.Stocks) + " stocks and $" + utils.FormatPrice(user.Bal) + " left.")
-			} else {
-				ctx.RespondText("Please specify a valid action.")
-			}
-			db.Close()
-		},
-	})
-	println("Registered command: stocks")
 	return router
 }

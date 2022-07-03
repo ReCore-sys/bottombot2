@@ -2,5 +2,6 @@
 topology_files/*
 images/banners/*
 images/users/*
-static/config.json
+static/config.yaml
 pytesting
+*.exe

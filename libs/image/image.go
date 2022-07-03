@@ -2,7 +2,6 @@ package image
 
 // Import go's image libraries
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"image"
@@ -21,6 +20,7 @@ import (
 	"github.com/fogleman/gg"
 	"github.com/nfnt/resize"
 	"golang.org/x/image/font"
+	"gopkg.in/yaml.v2"
 )
 
 /*DownloadFile This is a function that downloads a file from a URL and saves it to a file.*/
@@ -67,18 +67,18 @@ var (
 	titlefont  font.Face
 	cfg        config.Configs
 	rankmap    map[int]rank
-	modtimes   map[string]int64
 )
 
 // Initialize is a function to initialize the image library.
 func Initialize() {
 
-	ranksFile, err := ioutil.ReadFile("static/ranks.json") // Read the ranks file
+	ranksFile, err := ioutil.ReadFile("static/ranks.yaml") // Read the ranks file
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = json.Unmarshal(ranksFile, &Ranks) // Parse the ranks file into the rank struct
+	err = yaml.Unmarshal(ranksFile, &Ranks) // Parse the ranks file into the rank struct
 	if err != nil {
+		println(5)
 		log.Println(err)
 	}
 
@@ -127,7 +127,10 @@ func Account(uid string) string {
 		go func() {
 			// Wait 1 second before downloading the image
 			time.Sleep(1 * time.Second)
-			DownloadFile(userdetail.PFP, "./images/users/"+uid+".png")
+			err = DownloadFile(userdetail.PFP, "./images/users/"+uid+".png")
+			if err != nil {
+				log.Println(err)
+			}
 		}()
 	}
 	if err != nil {
@@ -171,7 +174,7 @@ func Account(uid string) string {
 	if err != nil {
 		log.Println(err)
 	}
-	err = jpeg.Encode(f, dc.Image(), &jpeg.Options{Quality: 70})
+	err = jpeg.Encode(f, dc.Image(), &jpeg.Options{Quality: 80})
 	if err != nil {
 		log.Println(err)
 	}

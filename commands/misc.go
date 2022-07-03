@@ -2,10 +2,16 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/inhies/go-bytesize"
+	"github.com/jaypipes/ghw"
 	"github.com/lus/dgc"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 // MiscRoute is a route that handles misc commands
@@ -17,14 +23,16 @@ func MiscRoute(router *dgc.Router) *dgc.Router {
 		Example:     "ping",
 		IgnoreCase:  true,
 		Handler: func(ctx *dgc.Ctx) {
-			time := time.Now()
 			msgtime := ctx.Event.Message.Timestamp
-			timediff := time.Sub(msgtime)
+			timediff := time.Since(msgtime)
 			print(timediff)
-			ctx.RespondEmbed(&discordgo.MessageEmbed{
+			err := ctx.RespondEmbed(&discordgo.MessageEmbed{
 				Title:       "Ping!",
 				Description: "This message took " + fmt.Sprint(timediff) + " to send.",
 			})
+			if err != nil {
+				log.Println(err)
+			}
 		},
 	})
 	println("Registered command: ping")
@@ -35,10 +43,13 @@ func MiscRoute(router *dgc.Router) *dgc.Router {
 		Usage:       "info",
 		Example:     "info",
 		Handler: func(ctx *dgc.Ctx) {
-			ctx.RespondEmbed(&discordgo.MessageEmbed{
+			err := ctx.RespondEmbed(&discordgo.MessageEmbed{
 				Title:       "Info",
 				Description: "This is bottombot, the single most fucked up bot in the world.",
 			})
+			if err != nil {
+				log.Println(err)
+			}
 		},
 	})
 	println("Registered command: info")
@@ -49,9 +60,67 @@ func MiscRoute(router *dgc.Router) *dgc.Router {
 		Usage:       "duck",
 		Example:     "duck",
 		Handler: func(ctx *dgc.Ctx) {
-			ctx.RespondText("https://www.chromethemer.com/download/hd-wallpapers/another-duck-in-the-snow-3840x2160.jpg")
+			err := ctx.RespondText("https://www.chromethemer.com/download/hd-wallpapers/another-duck-in-the-snow-3840x2160.jpg")
+			if err != nil {
+				log.Println(err)
+			}
 		},
 	})
 	println("Registered command: duck")
+
+	router.RegisterCmd(&dgc.Command{
+		Name:        "stats",
+		Description: "gets system stats",
+		Usage:       "stats",
+		Handler: func(ctx *dgc.Ctx) {
+			mem, err := mem.VirtualMemory()
+			if err != nil {
+				log.Println(err)
+			}
+			aaaaaaaaa, err := cpu.Info()
+			cpu := aaaaaaaaa[0]
+			if err != nil {
+				log.Println(err)
+			}
+			host, err := host.Info()
+			if err != nil {
+				log.Println(err)
+			}
+			gpu, err := ghw.GPU()
+			if err != nil {
+				log.Println(err)
+			}
+			fields := []*discordgo.MessageEmbedField{
+				{
+					Name:   "OS",
+					Value:  fmt.Sprintf("%s %s", host.Platform, host.PlatformVersion),
+					Inline: false,
+				},
+				{
+					Name:   "CPU",
+					Value:  fmt.Sprintf("Name: %s\n@ %.1f Ghz\nCores: %d\n", cpu.ModelName, cpu.Mhz/1000, cpu.Cores),
+					Inline: false,
+				},
+				{
+					Name:   "Memory",
+					Value:  fmt.Sprintf("Total: %s\nUsed: %s\nFree: %s\n", bytesize.New(float64(mem.Total)), bytesize.New(float64(mem.Used)), bytesize.New(float64(mem.Free))),
+					Inline: false,
+				},
+				{
+					Name:  "GPU",
+					Value: gpu.GraphicsCards[0].DeviceInfo.Product.Name,
+				},
+			}
+			err = ctx.RespondEmbed(&discordgo.MessageEmbed{
+				Title:  "Stats",
+				Type:   discordgo.EmbedTypeRich,
+				Fields: fields,
+			})
+			if err != nil {
+				log.Println(err)
+			}
+		},
+	})
+	println("Registered command: stats")
 	return router
 }

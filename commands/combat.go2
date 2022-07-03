@@ -1,0 +1,598 @@
+/*Package cmd THAT'S RIGHT FUCKERS, GET READY TO COMMIT FELONIES WITH THE ALL NEW COMBAT SYSTEM!!!! */
+package cmd
+
+import (
+	"fmt"
+	"log"
+	"math/rand"
+	"os"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/ReCore-sys/bottombot2/libs/config"
+	raven "github.com/ReCore-sys/bottombot2/libs/database"
+	"github.com/ReCore-sys/bottombot2/libs/utils"
+	"github.com/lus/dgc"
+	"gopkg.in/yaml.v2"
+)
+
+var (
+	funcmap = make(map[string]func(ctx *dgc.Ctx))
+	fights  = make(map[string]Monster)
+	// monstermap is a map of all the monsters in the game with their nameid as the key
+	monstermap     = make(map[string]Monster)
+	premadeweapons = make(map[string]raven.Item)
+)
+
+// Monster is a struct that holds info about a monster
+type Monster struct {
+	Name        string       `yaml:"Name"`        // Name is the name of the monster
+	IDname      string       `yaml:"IDname"`      // IDname is the name of the monster used for the ID
+	Type        string       `yaml:"Type"`        // Type is the type of the monster (boss, elite, etc)
+	Description string       `yaml:"Description"` // Description is a description of the monster
+	Rarity      float64      `yaml:"Rarity"`      // Rarity is the rarity of the monster
+	Health      float64      `yaml:"Health"`      // Health is the health of the monster
+	MaxHealth   float64      `yaml:"MaxHealth"`   // MaxHealth is the max health of the monster
+	Damage      float64      `yaml:"Damage"`      // Damage is the damage the monster does
+	XP          int          `yaml:"XP"`          // XP is the amount of XP the monster gives
+	Loot        []raven.Item `yaml:"Loot"`        // Loot is the loot the monster drops with the key being the item ID and the value being the chance of the item being dropped in percent
+	LootChances []float64    `yaml:"LootChances"` // LootChances is the list of chances for the monster to drop an item
+	Effects     []string     `yaml:"Effects"`     // Effects is a list of effects the monster has
+	Money       float64      `yaml:"Money"`       // Money is the amount of money the monster drops
+}
+
+// CombatRoute is a route that handles combat and inventory related commands
+func CombatRoute(router *dgc.Router) *dgc.Router {
+	CFG := config.Config()
+	router.RegisterCmd(&dgc.Command{
+		Name:        "equip",
+		Description: "equip an item",
+		Usage:       "equip <item id>",
+		Aliases:     []string{"eq", "equipt"},
+		Handler: func(ctx *dgc.Ctx) {
+			args := ParseArgs(ctx)
+			if len(args) <= 0 {
+				ctx.RespondText("Usage: equip <item id>")
+				return
+			}
+			inputid := args[0]
+			db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
+			if err != nil {
+				log.Println(err)
+			}
+			user, err := db.Get(ctx.Event.Author.ID)
+			if err != nil {
+				log.Println(err)
+			}
+			if hasitem(inputid, user) {
+				item, itemindex := getitem(inputid, user)
+				if item.Type == "weapon" {
+					// Add the current active weapon to the inventory
+
+					// Set the new active weapon
+					user.Combat.ActiveWeapon = item
+					for _, v := range user.Combat.Inv {
+						v.IsActive = false
+					}
+					user.Combat.Inv[itemindex] = item
+					err = db.Update(user)
+					if err != nil {
+						log.Println(err)
+					}
+					ctx.RespondText("You equip the \"" + item.Name + "\"")
+					db.Close()
+				} else {
+					ctx.RespondText("You don't have that item")
+				}
+
+			}
+		},
+	})
+	println("Registered command: equip")
+
+	router.RegisterCmd(&dgc.Command{
+		Name:        "inspect",
+		Description: "Gets info about your active weapon",
+		Usage:       "inspect <item id>",
+		Aliases:     []string{"i"},
+		Handler: func(ctx *dgc.Ctx) {
+			args := ParseArgs(ctx)
+			db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
+			if err != nil {
+				log.Println(err)
+			}
+			user, err := db.Get(ctx.Event.Author.ID)
+			if err != nil {
+				log.Println(err)
+			}
+			defer db.Close()
+			if len(args) == 0 {
+
+				equipweapon := user.Combat.ActiveWeapon
+				name := equipweapon.Name
+				desc := equipweapon.Description
+				rarity := parserarity(createrarity(equipweapon))
+				ctx.RespondText("```" + name + "```\n" + desc + "\nRarity: " + rarity)
+
+			} else {
+				if len(args) == 1 {
+					ctx.RespondText("Usage: inspect <monster/item> <monster/item id>")
+				}
+				switch args[0] {
+				case "item", "i", "items":
+
+					if hasitem(args[1], user) {
+						item, _ := getitem(strings.ToLower(args[1]), user)
+						name := item.Name
+						desc := item.Description
+						rarity := parserarity(createrarity(item))
+						var stats string
+						if item.Type == "weapon" {
+							stats = fmt.Sprintf("\nDamage: %.2f", item.Damage[0])
+						}
+						ctx.RespondText("```" + name + "```\n\"" + desc + "\"\nRarity: " + rarity + stats)
+					} else {
+						ctx.RespondText("You do not own that item")
+					}
+				case "monster", "m", "monsters":
+					monster := monstermap[args[1]]
+					name := monster.Name
+					desc := monster.Description
+					rarity := parserarity(monster.Rarity)
+					var prettyloot string
+
+					resp := "```" + name + "```\n\"" + desc + "\"\nRarity: " + rarity
+					resp += "\nHealth: " + fmt.Sprintf("%.2f", monster.Health)
+					if len(monster.Loot) > 0 {
+						for k, v := range monster.Loot {
+							prettyloot += v.Name + ": " + fmt.Sprint(k) + "%\n"
+						}
+						resp += "\nLoot:\n" + prettyloot
+					}
+					ctx.RespondText(resp)
+				default:
+					ctx.RespondText("Usage: inspect <monster/item> <monster/item id>")
+				}
+
+			}
+		},
+	},
+	)
+	println("Registered command: inspect")
+
+	router.RegisterCmd(&dgc.Command{
+		Name:        "monsters",
+		Description: "shows all monsters and their IDs",
+		Usage:       "monsters",
+		Handler: func(ctx *dgc.Ctx) {
+			var prettymonsters string
+			var monslice []Monster
+			for _, v := range monstermap {
+				monslice = append(monslice, v)
+			}
+			sort.Slice(monslice, func(i, j int) bool {
+				return monslice[i].Rarity < monslice[j].Rarity
+			})
+			for _, v := range monslice {
+				prettymonsters += "**" + v.Name + "** : `" + v.IDname + "`\n"
+			}
+			ctx.RespondText("```Name: ID```\n" + prettymonsters)
+		},
+	})
+	println("Registered command: monsters")
+
+	router.RegisterCmd(&dgc.Command{
+		Name:        "fight",
+		Description: "Pick a fight with a monster",
+		Usage:       "fight",
+		Handler: func(ctx *dgc.Ctx) {
+			args := ParseArgs(ctx)
+			db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
+			if err != nil {
+				log.Println(err)
+			}
+			user, err := db.Get(ctx.Event.Author.ID)
+			if err != nil {
+				log.Println(err)
+			}
+			if len(args) == 0 {
+				if mon, ok := fights[ctx.Event.Author.ID]; ok {
+					ctx.RespondText("You are fighting a " + mon.Name + "!\nIt has " + fmt.Sprint(mon.Health) + " health left")
+					return
+				}
+				mon := CreateMonster(user)
+				AssignMonster(mon, user)
+				ctx.RespondText("You have encountered a " + mon.Name + "!")
+				return
+			}
+			if len(args) == 1 {
+				if mon, ok := fights[ctx.Event.Author.ID]; ok {
+
+					action := args[0]
+					equipweapon := user.Combat.ActiveWeapon
+					switch action {
+					case "help":
+						ctx.RespondText("```fight help\nfight attack\nfight flee```")
+						return
+					case "attack":
+						funcmap[equipweapon.OnUse](ctx)
+						mon := fights[ctx.Event.Author.ID]
+						if mon.Health <= 0 {
+							ctx.RespondText("You killed the " + mon.Name + " and earned $" + fmt.Sprint(mon.Money) + "!")
+							delete(fights, ctx.Event.Author.ID)
+							db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
+							if err != nil {
+								log.Println(err)
+							}
+							user, err := db.Get(ctx.Event.Author.ID)
+							if err != nil {
+								log.Println(err)
+							}
+							user.Bal += mon.Money
+							db.Update(user)
+							db.Close()
+							itemtoprob := make(map[raven.Item]float64)
+							for index, item := range mon.Loot {
+								itemtoprob[item] = mon.LootChances[index]
+							}
+							for item, prob := range itemtoprob {
+								// Each item in this slice is a key in itemmap and the value is the rarity of the item as a percentage
+								CFG := config.Config()
+								rand.Seed(time.Now().UnixNano())
+								rarity := rand.Float64()
+								if rarity < prob {
+									db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
+									if err != nil {
+										log.Println(err)
+									}
+									user, err := db.Get(ctx.Event.Author.ID)
+									if err != nil {
+										log.Println(err)
+									}
+									user.Combat.Inv = append(user.Combat.Inv, item)
+									db.Update(user)
+									db.Close()
+									ctx.RespondText("You found a \"" + item.Name + "\"!")
+								}
+							}
+							return
+						}
+						return
+					case "info":
+						var resp string
+						resp += "```" + mon.Name + "```\n"
+						resp += "Health: " + fmt.Sprint(mon.Health) + "/" + fmt.Sprint(mon.MaxHealth) + "\n"
+						resp += "Damage: " + fmt.Sprint(mon.Damage) + "\n"
+						ctx.RespondText(resp)
+						return
+					}
+				}
+				ctx.RespondText("You are not fighting a monster!")
+				return
+			}
+		},
+	})
+	println("Registered command: fight")
+
+	router.RegisterCmd(&dgc.Command{
+		Name:        "inv",
+		Description: "Shows your inv",
+		Usage:       "inv",
+		Handler: func(ctx *dgc.Ctx) {
+			db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
+			if err != nil {
+				log.Println(err)
+			}
+			user, err := db.Get(ctx.Event.Author.ID)
+			if err != nil {
+				log.Println(err)
+			}
+			var generalinv string
+			for _, item := range user.Combat.Inv {
+				generalinv += "**" + item.Name + "**: `" + item.ID + "`\n"
+			}
+			equip := "**Equipped: " + user.Combat.ActiveWeapon.Name + "**\n" + strings.Repeat("-", 10) + "\n"
+			equip += "**Inventory:**\n"
+			ctx.RespondText(equip + generalinv)
+			db.Close()
+		},
+	})
+	println("Registered command: inv")
+
+	CreateWeapons()
+	InitMonsters()
+	return router
+}
+
+func isinmapMonster(key string) bool {
+	_, ok := monstermap[key]
+	return ok
+}
+
+// GetActiveWeapon returns the active weapon for a ctx object
+func GetActiveWeapon(ctx *dgc.Ctx) raven.Item {
+	CFG := config.Config()
+	db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
+	if err != nil {
+		log.Println(err)
+	}
+	user, err := db.Get(ctx.Event.Author.ID)
+	if err != nil {
+		log.Println(err)
+	}
+	return user.Combat.ActiveWeapon
+}
+
+// CreateMonster creates and returns a monster object based on a user's stats
+func CreateMonster(user raven.User) Monster {
+
+	// Create a new monster that is balanced against the user's stats. This includes stuff like user's health, damage, and loot
+	var monsters []Monster
+	userweapon := user.Combat.ActiveWeapon
+	prune := func(index int) {
+		monsters = append(monsters[:index], monsters[index+1:]...)
+	}
+	for _, v := range monstermap {
+		monsters = append(monsters, v)
+	}
+	for i, v := range monsters {
+		if v.Health > user.Combat.HealthMax {
+			prune(i)
+		}
+		if v.Health > createdmg(userweapon)*10 {
+			prune(i)
+		}
+
+	}
+	return monsters[rand.Intn(len(monsters))]
+}
+
+// InitMonsters initializes the monster map
+func InitMonsters() {
+	f, err := os.ReadFile("./static/monsters.yaml")
+	if err != nil {
+
+		log.Println(err)
+	}
+	var monsters []Monster
+	err = yaml.Unmarshal(f, &monsters)
+	if err != nil {
+		println(2)
+		log.Println(err)
+	}
+	for _, mon := range monsters {
+		monstermap[mon.IDname] = mon
+	}
+}
+
+// AssignMonster just assigns a monster to a fight with a user
+func AssignMonster(mon Monster, user raven.User) {
+	fights[user.UID] = mon
+}
+
+// DMGmonster is a simple function to damage a monster a certain amount
+func DMGmonster(ctx *dgc.Ctx, amount float64) bool {
+	if mon, ok := fights[ctx.Event.Author.ID]; ok {
+		mon.Health -= amount
+		fights[ctx.Event.Author.ID] = mon
+
+		return true
+	}
+	return false
+
+}
+
+// DMGuser is a simple function to damage a user a certain amount
+func DMGuser(ctx *dgc.Ctx, amount float64) bool {
+	CFG := config.Config()
+	db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
+	if err != nil {
+		log.Println(err)
+	}
+	user, err := db.Get(ctx.Event.Author.ID)
+	if err != nil {
+		log.Println(err)
+	}
+	user.Combat.Health -= amount
+	err = db.Update(user)
+	if err != nil {
+		log.Println(err)
+	}
+	db.Close()
+	return true
+}
+
+// GetMonster god im lazy but here we are
+func GetMonster(ctx *dgc.Ctx) Monster {
+	return fights[ctx.Event.Author.ID]
+}
+
+// UpdateMonster updates a monster's stats
+func UpdateMonster(ctx *dgc.Ctx, mon Monster) {
+	fights[ctx.Event.Author.ID] = mon
+}
+
+// HasEffect checks if a monster has a given effect
+func HasEffect(eff string, mon Monster) bool {
+	for _, v := range mon.Effects {
+		if v == eff {
+			return true
+		}
+	}
+	return false
+}
+
+func hasitem(id string, usr raven.User) bool {
+	for _, it := range usr.Combat.Inv {
+		if strings.ToLower(it.ID) == id {
+			return true
+		}
+	}
+	return false
+}
+
+func getitem(id string, usr raven.User) (raven.Item, int) {
+	for index, it := range usr.Combat.Inv {
+		if strings.ToLower(it.ID) == id {
+			return it, index
+		}
+	}
+	return raven.Item{}, -1
+}
+
+// GiveItem gives an item to a user
+func GiveItem(user raven.User, item raven.Item) raven.User {
+	user.Combat.Inv = append(user.Combat.Inv, item)
+	return user
+}
+
+func createrarity(inp raven.Item) float64 {
+	rarrange := inp.Rarity
+	return rarrange[0] + rand.Float64()*(rarrange[0]-rarrange[1])
+}
+func createdmg(inp raven.Item) float64 {
+	dmgrange := inp.Damage
+	return dmgrange[0] + rand.Float64()*(dmgrange[0]-dmgrange[1])
+}
+
+func parserarity(rarity float64) string {
+	if rarity < 15 {
+		return "Common"
+	} else if rarity < 30 {
+		return "Uncommon"
+	} else if rarity < 45 {
+		return "Rare"
+	} else if rarity < 60 {
+		return "Epic"
+	} else if rarity < 75 {
+		return "Legendary"
+	} else if rarity < 90 {
+		return "Mythic"
+	} else {
+		return "Godly"
+	}
+}
+
+// CreateWeapons creates the weapons and adds them to the itemmap as well as setting up the funcmap
+func CreateWeapons() {
+	f, err := os.ReadFile("./static/items.yaml")
+	if err != nil {
+		log.Println(err)
+	}
+	type preweapon struct {
+		ID          string    `yaml:"ID"`          // ID is the ID of the item
+		Name        string    `yaml:"Name"`        // Name is the name of the item
+		Type        string    `yaml:"Type"`        // Type is the type of the item (weapon, armour, etc)
+		Description string    `yaml:"Description"` // Description is a description of the item
+		Rarity      []float64 `yaml:"Rarity"`      // Rarity is the rarity of the item
+		Damage      []float64 `yaml:"Damage"`      // Damage is the damage of the item.
+		OnUse       string    `yaml:"Onuse"`       // When the item is used, this string is looked up in the map of item use functions and run
+		IsActive    bool      `yaml:"IsActive"`    // IsActive is whether the item is equiped or not
+	}
+	var items []raven.Item
+	var preitems []preweapon
+	err = yaml.Unmarshal(f, &preitems)
+	if err != nil {
+		println(3)
+		log.Println(err)
+	}
+	for _, v := range preitems {
+		rarity := v.Rarity[0] + rand.Float64()*(v.Rarity[1]-v.Rarity[0])
+		dmg := v.Damage[0] + rand.Float64()*(v.Damage[1]-v.Damage[0])
+		items = append(items, raven.Item{
+			ID:          v.ID,
+			Name:        v.Name,
+			Type:        v.Type,
+			Description: v.Description,
+			Rarity:      [2]float64{rarity, rarity},
+			Damage:      [2]float64{dmg, dmg},
+			OnUse:       v.OnUse,
+			IsActive:    v.IsActive,
+		})
+	}
+	if err != nil {
+		log.Println(err)
+	}
+	for _, item := range items {
+		premadeweapons[item.ID] = item
+	}
+	funcmap["boltor"] = boltor
+	funcmap["gapener"] = gapener
+	funcmap["Trollage"] = trollage
+}
+
+/**========================================================================
+ *                           Item Use Commands
+ *========================================================================**/
+
+func boltor(ctx *dgc.Ctx) {
+	dmg := GetActiveWeapon(ctx).Damage
+	monster := GetMonster(ctx)
+	randomresponses := []string{"You commit genocide in the name of the God-Emperor", "\"In his glory!\"", "For the emperor of mankind...", "\"Eat this you chaos loving scum!\""}
+	ctx.RespondText(utils.RandomChoiceStrings(randomresponses))
+	DMGmonster(ctx, dmg[0])
+	if monster.Health > 0 {
+
+		dmgamount := monster.Damage
+		DMGuser(ctx, dmgamount)
+		ctx.RespondText("You took " + fmt.Sprint(dmgamount) + " damage!")
+	}
+}
+
+func gapener(ctx *dgc.Ctx) {
+	monster := GetMonster(ctx)             // Get the monster
+	rand.Seed(time.Now().UnixNano())       // Seed the random number generator
+	active := GetActiveWeapon(ctx)         // Get the active weapon
+	if HasEffect("ass_widened", monster) { // If the monster has the ass_widened effect, deal damage like normal
+
+		resp := "You dealt " + fmt.Sprint(active.Damage) + " damage to the " + monster.Name + "!\n"
+		ctx.RespondText(resp)
+		DMGmonster(ctx, active.Damage[0])
+	} else { // If they don't have the effect, become the rectum ripper
+		names := []string{"Rectum Ripper", "Sphincter Shredder", "Anus Annihilator", "Rectal Reaper"}
+		ctx.RespondText("The " + monster.Name + "'s asshole is now " + fmt.Sprint((rand.Intn(3)*10)+20) + "cm in diameter. They have been crippled.\nThe " + utils.RandomChoiceStrings(names) + " strikes again!\n")
+		monster.Damage = monster.Damage * 0.75                   // Reduce the monster's damage by 25%
+		monster.Effects = append(monster.Effects, "ass_widened") // Add the ass_widened effect
+		UpdateMonster(ctx, monster)                              // Update the monster
+	}
+	if monster.Health > 0 {
+
+		dmgamount := monster.Damage
+		DMGuser(ctx, dmgamount)
+		ctx.RespondText("You took " + fmt.Sprint(dmgamount) + " damage!")
+	}
+
+}
+
+func trollage(ctx *dgc.Ctx) {
+	monster := GetMonster(ctx)
+	active := GetActiveWeapon(ctx)
+	if HasEffect("trollage", monster) {
+		DMGmonster(ctx, active.Damage[0])
+		ctx.RespondText("You dealt " + fmt.Sprint(active.Damage) + " damage to the " + monster.Name + "!\n")
+		if monster.Health > 0 {
+			dmg := monster.Damage
+			DMGuser(ctx, dmg)
+			ctx.RespondText("You took " + fmt.Sprint(dmg) + " damage!")
+		}
+	} else {
+		ctx.RespondText("The " + monster.Name + " got trolled!\n")
+		DMGmonster(ctx, active.Damage[0])
+		ctx.RespondText("You dealt " + fmt.Sprint(active.Damage[0]) + " damage to the " + monster.Name + "!\n")
+	}
+}
+
+func reap(ctx *dgc.Ctx) {
+	monster := GetMonster(ctx)
+	active := GetActiveWeapon(ctx)
+	remaininghealth := (monster.Health / monster.MaxHealth) + 1
+	dmg := createdmg(active)
+	DMGmonster(ctx, dmg*remaininghealth)
+	ctx.RespondText("You dealt " + fmt.Sprint(dmg*remaininghealth) + " damage to the " + monster.Name + "!\n")
+	if monster.Health > 0 {
+		dmg := monster.Damage
+		DMGuser(ctx, dmg)
+		ctx.RespondText("You took " + fmt.Sprint(dmg) + " damage!")
+	}
+}

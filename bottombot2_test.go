@@ -135,18 +135,6 @@ func TestDel(t *testing.T) {
 	}
 }
 
-func TestMem(t *testing.T) {
-	// Allocate memory
-	memhog := make([]byte, 16000000) // 16MB
-	memhog = make([]byte, 32000000)  // 32MB
-	memhog = make([]byte, 64000000)  // 64MB
-	memhog = make([]byte, 128000000) // 128MB
-	memhog = make([]byte, 256000000) // 256MB
-	memhog = make([]byte, 512000000) // 512MB
-	memhog = make([]byte, 0)         // Clear memory
-	_ = memhog
-}
-
 func TestValidUsers(t *testing.T) {
 	CFG := config.Config()
 	// Check all users have a valid account
@@ -168,7 +156,7 @@ func TestValidUsers(t *testing.T) {
 		if usr.Stocks < 0 { // Check if stocks is negative
 			t.Errorf("User %s has negative stock count", usr.UID)
 		}
-		r, err := regexp.Compile("\\d+") // Check if username contains numbers
+		r, err := regexp.Compile(`\d+`) // Check if username contains numbers
 		if err != nil {
 			t.Errorf("Regex compile failed: %s", err)
 		}
@@ -182,11 +170,12 @@ func TestValidUsers(t *testing.T) {
 func TestVersion(t *testing.T) {
 	v := runtime.Version()
 	// Get all characters in the version string that are either a digit or a dot
-	r, err := regexp.Compile("[0-9.]+")
+	r, err := regexp.Compile(`[0-9]+\.[0-9]+`)
 	if err != nil {
 		t.Errorf("Regex compile failed: %s", err)
 	}
-	mat, err := strconv.ParseFloat(r.FindString(v), 64)
+	foundstring := r.FindString(v)
+	mat, err := strconv.ParseFloat(foundstring, 64)
 	if err != nil {
 		t.Errorf("Version string is not a float: %s", err)
 	}
@@ -235,19 +224,6 @@ func BenchmarkIter(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		r := utils.RandomChoiceUsers(users)
 		utils.IndexOfUsers(r, users)
-	}
-
-}
-
-func BenchmarkCalc(b *testing.B) {
-	users := utils.Createusers(200)
-	for i := 0; i < b.N; i++ {
-		r := utils.RandomChoiceUsers(users)
-		r.Bal += rand.Float64() * 10
-		r.Stocks += rand.Intn(10) - 5
-		index := utils.IndexOfUsers(r, users)
-		users[index] = r
-		utils.Pricecalc(users)
 	}
 
 }

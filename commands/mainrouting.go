@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"regexp"
+	"log"
 	"strings"
 
 	"github.com/ReCore-sys/bottombot2/libs/config"
@@ -12,32 +12,9 @@ import (
 
 var s *discordgo.Session
 
-// SesSession allows you to set the session's session handler.
-func SesSession(session *discordgo.Session) {
+// SetSession allows you to set the session's session handler.
+func SetSession(session *discordgo.Session) {
 	s = session
-}
-
-// ParseArgs returns a slice of strings that are the arguments of the command.
-func ParseArgs(ctx *dgc.Ctx) []string {
-	args := ctx.Arguments.Raw()
-	res := strings.Split(args, " ")
-	if len(res) == 0 {
-		return []string{}
-	}
-	if res[0] == "" {
-		return []string{}
-	}
-	return res
-}
-
-// ParsePing gets an ID from a ping
-func ParsePing(arg string) string {
-	reg := regexp.MustCompile(`^<@!?(\d+)>$`)
-	result := reg.FindStringSubmatch(arg)
-	if len(result) == 0 {
-		return ""
-	}
-	return result[1]
 }
 
 // Registercommands is a general command that recieves a router object then passes it around all the command routers
@@ -47,6 +24,7 @@ func Registercommands(router *dgc.Router) *dgc.Router {
 	cfg := config.Config()
 	router = MiscRoute(router)
 	router = EcoRoute(router)
+	//router = CombatRoute(router)
 
 	router.RegisterCmd(&dgc.Command{ // Add the help command
 		Name:        "help",
@@ -61,7 +39,10 @@ func Registercommands(router *dgc.Router) *dgc.Router {
 					commands = append(commands, formatted)                                                           // Append the formatted command to the slice.
 				}
 				msg := "Available commands: \n" + strings.Join(commands, "\n")
-				ctx.RespondText(msg)
+				err := ctx.RespondText(msg)
+				if err != nil {
+					log.Println(err)
+				}
 			} else { // If there are arguments, show the help for the specified command.
 				for _, cmd := range ctx.Router.Commands { // Loop through all commands.
 					if cmd.Name == ctx.Arguments.Get(0).Raw() { // If the command name matches the argument,
@@ -80,14 +61,20 @@ func Registercommands(router *dgc.Router) *dgc.Router {
 									Inline: false,
 								},
 							}}
-						ctx.RespondEmbed(embed) // Respond with the embed.
+						err := ctx.RespondEmbed(embed) // Respond with the embed.
+						if err != nil {
+							log.Println(err)
+						}
 						return
 					}
 				}
-				ctx.RespondText("No command found with that name") // If no command was found, respond with this message.
+				err := ctx.RespondText("No command found with that name") // If no command was found, respond with this message.
+				if err != nil {
+					log.Println(err)
+				}
 			}
 		}})
-	print("Registered command: help")
+	println("Registered command: help")
 
 	return router
 }

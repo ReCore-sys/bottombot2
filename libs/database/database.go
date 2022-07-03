@@ -12,21 +12,44 @@ import (
 
 // Database is a struct that contains the database information
 type Database struct {
-	Host         string
-	Port         int
-	DatabaseName string
-	Dstore       *ravendb.DocumentStore
-	Session      *ravendb.DocumentSession
+	Host         string                   // The IP address of the database
+	Port         int                      // The port of the database
+	DatabaseName string                   // The name of the database
+	Dstore       *ravendb.DocumentStore   // The document store
+	Session      *ravendb.DocumentSession // The session
 }
 
 // User is a struct that contains the user information
 type User struct {
-	UID      string  `json:"UID"`
-	Username string  `json:"Username"`
-	Stocks   int     `json:"Stocks"`
-	Bal      float64 `json:"Bal"`
-	Rank     int     `json:"Rank"`
-	PFP      string  `json:"PFP"`
+	UID      string  `json:"UID"`      // Unique ID, created by discord
+	Username string  `json:"Username"` // User's username. No identifiers
+	Stocks   int     `json:"Stocks"`   // User's stocks
+	Bal      float64 `json:"Bal"`      // User's balance
+	Rank     int     `json:"Rank"`     // User's rank
+	PFP      string  `json:"PFP"`      // URL to user's profile picture
+}
+
+// Item is a struct that holds info about an item
+type Item struct {
+	ID          string     `json:"ID"`          // ID is the ID of the item
+	Name        string     `json:"Name"`        // Name is the name of the item
+	Type        string     `json:"Type"`        // Type is the type of the item (weapon, armour, etc)
+	Description string     `json:"Description"` // Description is a description of the item
+	Rarity      [2]float64 `json:"Rarity"`      // Rarity is the rarity of the item
+	Damage      [2]float64 `json:"Damage"`      // Damage is the damage of the item.
+	OnUse       string     `json:"Onuse"`       // When the item is used, this string is looked up in the map of item use functions and run
+	IsActive    bool       `json:"IsActive"`    // IsActive is whether the item is equiped or not
+}
+
+// Combat is a struct that holds info regarding combat stuff like health, items, level, etc
+type Combat struct {
+	Health       float64 `json:"Health"`       // Health is the amount of health the user has
+	HealthMax    float64 `json:"HealthMax"`    // HealthMax is the max amount of health the user can have
+	Level        int     `json:"Level"`        // Level is the level of the user
+	XP           int     `json:"XP"`           // XP is the amount of XP the user has
+	Inv          []Item  `json:"Inv"`          // Inv is the inventory of the user. Items are stored as a map of item ID to quantity
+	ActiveWeapon Item    `json:"ActiveWeapon"` // ActiveWeapon is the ID of the active weapon
+	ActiveArmour []Item  `json:"ActiveArmour"` // ActiveArmour is the IDs of the active armour
 }
 
 func getDocumentStore(url string, port int, databaseName string) (*ravendb.DocumentStore, error) {
@@ -75,7 +98,7 @@ func (db *Database) Get(uid string) (User, error) {
 
 // Set sets a user
 func (db *Database) Set(user User) error {
-	if db.DoesExist(user.UID) == false {
+	if !db.DoesExist(user.UID) {
 		// User doesn't exist, create it
 		err := db.Session.Store(&user)
 		if err != nil {
@@ -90,7 +113,6 @@ func (db *Database) Set(user User) error {
 
 // Update updates a user
 func (db *Database) Update(user User) error {
-	// HACK: This works but its a really bad way to do it
 	if db.DoesExist(user.UID) {
 		// get the document ID of the usr
 		var usr *User

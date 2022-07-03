@@ -2,11 +2,17 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
+	"os"
+	"regexp"
+	"strings"
 	"time"
 
 	raven "github.com/ReCore-sys/bottombot2/libs/database"
+	"github.com/bwmarrin/discordgo"
+	"github.com/lus/dgc"
 )
 
 // IndexOfUsers returns the index of a user in a slice of users.
@@ -53,4 +59,59 @@ func comma(value float64) string {
 		formatted = formatted[:i] + "," + formatted[i:]
 	}
 	return formatted
+}
+
+// SendFile sends a file to a channel.
+func SendFile(file *os.File, ctx *dgc.Ctx, s *discordgo.Session) {
+	ms := &discordgo.MessageSend{
+		Files: []*discordgo.File{
+			{
+				Name:   file.Name(),
+				Reader: file,
+			},
+		},
+	}
+	_, err := s.ChannelMessageSendComplex(ctx.Event.ChannelID, ms)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+var DoneIntervals int64
+
+func IntervalCheck(intervalms int) bool {
+	// Check if the current time is within the interval.
+	// If it is, return true.
+	// If it is not, return false.
+	now := time.Now().UnixMilli()
+	if now%int64(intervalms) == 0 {
+		if now != DoneIntervals {
+			DoneIntervals = now
+			return true
+		}
+	}
+	return false
+}
+
+// ParseArgs returns a slice of strings that are the arguments of the command.
+func ParseArgs(ctx *dgc.Ctx) []string {
+	args := ctx.Arguments.Raw()
+	res := strings.Split(args, " ")
+	if len(res) == 0 {
+		return []string{}
+	}
+	if res[0] == "" {
+		return []string{}
+	}
+	return res
+}
+
+// ParsePing gets an ID from a ping
+func ParsePing(arg string) string {
+	reg := regexp.MustCompile(`^<@!?(\d+)>$`)
+	result := reg.FindStringSubmatch(arg)
+	if len(result) == 0 {
+		return ""
+	}
+	return result[1]
 }

@@ -1,0 +1,218 @@
+- Name: Zombie Lad
+  IDname: zombie
+  Type: normal
+  Description: A zombie who has decided to consume your brains. Other than that, he's a really nice guy.
+  Rarity: 1
+  Health: 12
+  MaxHealth: 12
+  Damage: 1
+  XP: 1
+  Loot: []
+  Effects: []
+  Money: 10
+- Name: Skelboi
+  IDname: skeleton
+  Type: normal
+  Description: Has a rock hard boner
+  Rarity: 1
+  Health: 18
+  MaxHealth: 18
+  Damage: 2
+  XP: 4
+  Loot: []
+  Effects: []
+  Money: 10
+- Name: Shambler
+  IDname: zombie2
+  Type: normal
+  Description: A slower, weaker zombie who didn't hit the gym enough before zombification.
+  Rarity: 1
+  Health: 8
+  MaxHealth: 8
+  Damage: 0.5
+  XP: 1
+  Loot:
+    - ID: boltor
+      Name: Boltor
+      Type: weapon
+      Description: FOR THE EMPREROR!
+      Rarity:
+        - 10.0
+        - 12.0
+      Damage:
+        - 7.0
+        - 12.0
+      OnUse: boltor
+      IsActive: false
+  LootChances:
+    - 1.0
+  Effects: []
+  Money: 10
+- Name: Stitches
+  IDname: zombie3
+  Type: normal
+  Description: A zombie with extra appendages and torsos stitched to it, go figure.
+  Rarity: 30
+  Health: 24
+  MaxHealth: 24
+  Damage: 3.5
+  XP: 6
+  Loot: []
+  Effects: []
+  Money: 10
+- Name: Maul
+  IDname: zombie4
+  Type: normal
+  Description: Looks like a former bodybuilder, wouldn't want to cross its path.
+  Rarity: 40
+  Health: 40
+  MaxHealth: 40
+  Damage: 6
+  XP: 10
+  Loot: []
+  Effects: []
+  Money: 10
+- Name: Belcher
+  IDname: zombie5
+  Type: normal
+  Description: A mutilated zombie with a abnormally sized mouth, I think its time to start wearing goggles.
+  Rarity: 25
+  Health: 12
+  MaxHealth: 12
+  Damage: 4
+  XP: 6
+  Loot: []
+  Effects: []
+  Money: 10
+- Name: Stray
+  IDname: wolf
+  Type: normal
+  Description: Whos a good boy?.....
+  Rarity: 5
+  Health: 10
+  MaxHealth: 10
+  Damage: 2
+  XP: 5
+  Loot: []
+  Effects: []
+  Money: 10
+- Name: Rabid Stray
+  IDname: wolfb
+  Type: normal
+  Description: That froth can't be any good
+  Rarity: 10
+  Health: 8
+  MaxHealth: 8
+  Damage: 3
+  XP: 5
+  Loot: []
+  Effects: []
+  Money: 10
+- Name: Wolf
+  IDname: wolfc
+  Type: normal
+  Description: I hope the pack isn't nearby...
+  Rarity: 10
+  Health: 10
+  MaxHealth: 10
+  Damage: 3
+  XP: 8
+  Loot: []
+  Effects: []
+  Money: 10
+- Name: Flayed
+  IDname: skeleton2
+  Type: normal
+  Description: Whatever skin left is hanging off the bones
+  Rarity: 20
+  Health: 16
+  MaxHealth: 16
+  Damage: 3.5
+  XP: 10
+  Loot: []
+  Effects: []
+  Money: 10
+- Name: Survivor
+  IDname: humanoid
+  Type: normal
+  Description: A fellow human! Oh boy, I do like the look of their shoes. Pity they aren't willing to give them up
+  Rarity: 20
+  Health: 20
+  MaxHealth: 20
+  Damage: 2.5
+  XP: 12
+  Loot: []
+  Effects: []
+  Money: 10
+- Name: Rage
+  IDname: humanoid2
+  Type: normal
+  Description: A human infected with an unknown disease, that makes them inconceivably violent, they aren't human now...
+  Rarity: 10
+  Health: 18
+  MaxHealth: 18
+  Damage: 4
+  XP: 16
+  Loot: []
+  Effects: []
+  Money: 10
+- Name: Injured
+  IDname: humanoidb
+  Type: normal
+  Description: Easy pickings
+  Rarity: 30
+  Health: 14
+  MaxHealth: 10
+  Damage: 1.5
+  XP: 8
+  Loot: []
+  Effects: []
+  Money: 10
+- Name: Raider
+  IDname: humanoid3
+  Type: normal
+  Description: These guys came prepared...
+  Rarity: 15
+  Health: 18
+  MaxHealth: 18
+  Damage: 3
+  XP: 10
+  Loot: []
+  Effects: []
+  Money: 10
+- Name: Oxen
+  IDname: bovine
+  Type: normal
+  Description: It looks so peaceful chewing its cud...
+  Rarity: 10
+  Health: 20
+  MaxHealth: 20
+  Damage: 1.4
+  XP: 8
+  Loot: []
+  Effects: []
+  Money: 10
+- Name: Trader Oxen
+  IDname: bovine2
+  Type: normal
+  Description: A lumbering oxen carrying large bags on its sides. This one seems to have lost its owner
+  Rarity: 45
+  Health: 20
+  MaxHealth: 20
+  Damage: 1.5
+  XP: 8
+  Loot: []
+  Effects: []
+  Money: 10
+- Name: Wandering soul
+  IDname: ghost
+  Type: normal
+  Description: "This sorry excuse of a spirit is looking for a new host "
+  Rarity: 10
+  Health: 5
+  MaxHealth: 5
+  Damage: 1.1
+  XP: 5
+  Loot: []
+  Effects: []
+  Money: 10

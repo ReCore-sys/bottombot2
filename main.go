@@ -10,7 +10,9 @@ import (
 
 	cmd "github.com/ReCore-sys/bottombot2/commands"
 	"github.com/ReCore-sys/bottombot2/libs/config"
+	raven "github.com/ReCore-sys/bottombot2/libs/database"
 	"github.com/ReCore-sys/bottombot2/libs/image"
+	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"github.com/ReCore-sys/bottombot2/libs/stocks"
 	"github.com/bwmarrin/discordgo"
 	"github.com/lus/dgc"
@@ -22,13 +24,14 @@ func main() {
 	image.Initialize()
 	discord, err := discordgo.New("Bot " + string(CFG.Token)) // Create a new Discord session using the provided bot token.
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 
 	cmd.SetSession(discord) // Set the session's session handler.
 	Router := dgc.Create(&dgc.Router{
 		Prefixes: []string{CFG.Prefix},
 	}) // Create a new router with the prefixes defined in the config.
+
 	Router = cmd.Registercommands(Router) // Register all commands in the commands.go file.
 
 	Router.Initialize(discord) // Initialize the router with the discord session.
@@ -38,25 +41,28 @@ func main() {
 		log.Fatal("\nCan't connect to DB.\nDid you actually start it?")
 	}
 	go stocks.PriceLoop(discord)
-	stocks.UpdatePrice(stocks.GeneratePrice())
+	for _, ticker := range raven.Tickers {
+		stocks.UpdatePrice(ticker, stocks.GeneratePrice(ticker))
+
+	}
 	err = discord.Open() // Open the connection to Discord.
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 
-	err = discord.UpdateGameStatus(0, fmt.Sprintf("with $%v in stocks", stocks.Price))
+	err = discord.UpdateListeningStatus("the IRS bang on my door")
 
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 
 	fmt.Println("Bot started!") // Print a message to the console to let the user know the bot is online.
 	// Wait here until CTRL-C or other term signal is received.
 	defer discord.Close() // Close the connection to Discord.
 
-	stop := make(chan os.Signal, 1)   // Create a channel to receive the signal.
-	signal.Notify(stop, os.Interrupt) // Notify the channel when a signal is received.
-	<-stop                            // Wait for the signal.
-	log.Println("Graceful shutdown")  // Print a message to the console to let the user know the bot is shutting down.
+	stop := make(chan os.Signal, 1)        // Create a channel to receive the signal.
+	signal.Notify(stop, os.Interrupt)      // Notify the channel when a signal is received.
+	<-stop                                 // Wait for the signal.
+	logging.LogString("Graceful shutdown") // Print a message to the console to let the user know the bot is shutting down.
 
 }

@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"gopkg.in/yaml.v2"
 )
 
@@ -30,7 +31,7 @@ func Config() Configs {
 	if err != nil {
 
 		println(4)
-		log.Println(err)
+		logging.Log(err)
 	}
 	return CFG
 }

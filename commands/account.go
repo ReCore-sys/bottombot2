@@ -15,6 +15,7 @@ import (
 	raven "github.com/ReCore-sys/bottombot2/libs/database"
 	"github.com/ReCore-sys/bottombot2/libs/image"
 	img "github.com/ReCore-sys/bottombot2/libs/image"
+	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"github.com/ReCore-sys/bottombot2/libs/stocks"
 	"github.com/ReCore-sys/bottombot2/libs/utils"
 	"github.com/bwmarrin/discordgo"
@@ -64,7 +65,7 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 	err = yaml.Unmarshal(ranksFile, &Ranks) // Parse the ranks file into the rank struct
 	if err != nil {
 		println(1)
-		log.Println(err)
+		logging.Log(err)
 	}
 	CFG := config.Config()
 
@@ -76,7 +77,7 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 		Handler: func(ctx *dgc.Ctx) {
 			db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "users") // Create a RavenDB session
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 			args := utils.ParseArgs(ctx)
 			var target string
@@ -89,7 +90,7 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 				acc := img.Account(target)
 				file, err := os.Open(acc)
 				if err != nil {
-					log.Println(err)
+					logging.Log(err)
 				}
 				ms := &discordgo.MessageSend{
 					Files: []*discordgo.File{
@@ -101,33 +102,33 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 				}
 				_, err = s.ChannelMessageSendComplex(ctx.Event.ChannelID, ms)
 				if err != nil {
-					log.Println(err)
+					logging.Log(err)
 				}
 				go func() {
 					err = file.Close()
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 				}()
 				go func() {
 					err = os.Remove(acc)
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 				}()
 				currentuser, err := db.Get(target)
 				if err != nil {
-					log.Println(err)
+					logging.Log(err)
 				}
 				if ("https://cdn.discordapp.com/avatars/" + ctx.Event.Author.ID + "/" + ctx.Event.Message.Author.Avatar + ".png") != currentuser.PFP {
 					currentuser.PFP = ("https://cdn.discordapp.com/avatars/" + ctx.Event.Author.ID + "/" + ctx.Event.Message.Author.Avatar + ".png")
 					err = db.Update(currentuser)
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 					err = image.DownloadFile(currentuser.PFP, acc)
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 				}
 				file = nil
@@ -137,23 +138,26 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 					usr := raven.User{
 						UID:      ctx.Event.Author.ID,       // Set the user's ID
 						Username: ctx.Event.Author.Username, // Set the user's username
-						Stocks:   0,
 						Bal:      100,
 						Rank:     0,
 						PFP:      "https://cdn.discordapp.com/avatars/" + ctx.Event.Author.ID + "/" + ctx.Event.Message.Author.Avatar + ".png",
 					}
+					usr.Stocks = make(map[string]int)
+					for _, ticker := range raven.Tickers {
+						usr.Stocks[ticker] = 0
+					}
 					err = db.Set(usr)
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 					err = ctx.RespondText("Account created!")
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 				} else {
 					err = ctx.RespondText("This user either doesn't exist or they don't have an account!")
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 				}
 			}
@@ -161,12 +165,12 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 				go func() {
 					user, err := db.Get(target)
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 					user.PFP = "https://cdn.discordapp.com/avatars/" + ctx.Event.Author.ID + "/" + ctx.Event.Message.Author.Avatar + ".png"
 					err = db.Update(user)
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 				}()
 			}
@@ -197,7 +201,7 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 				Fields:      fields,
 			})
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 		}})
 	println("Registered command: ranks")
@@ -211,7 +215,7 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 			if ratecheck(ctx) {
 				db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "users") // Create a RavenDB session
 				if err != nil {
-					log.Println(err)
+					logging.Log(err)
 				}
 				GambleResponsesLose := []string{"Damn bro, chill", "LMAO your bank account", "Uhhh you ok there buddy?", "I think you might have a problem", "Maybe you shouldn't gamble that much..."}
 				GambleResponsesWin := []string{"Nice. But you won't win every time...", "Make sure it doesn't get out of hand", "Nice work"}
@@ -219,52 +223,52 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 				if len(args) == 0 || args[0] == "" {
 					err = ctx.RespondText("Please specify an amount to gamble.")
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 					return
 				}
 				if !(regexp.MustCompile(`\d+$`).MatchString(args[0])) {
 					err = ctx.RespondText("Please specify a valid amount.")
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 					return
 				}
 				amntint, err := strconv.Atoi(args[0])
 				amnt := float64(amntint)
 				if err != nil {
-					log.Println(err)
+					logging.Log(err)
 					err = ctx.RespondText("Please specify a valid amount.")
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 					return
 				}
 				if amnt < 10 {
 					err = ctx.RespondText("You must gamble at least $10.")
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 					return
 				}
 				if err != nil {
-					log.Println(err)
+					logging.Log(err)
 				}
 				if !db.DoesExist(ctx.Event.Author.ID) { // Check if the user already has an account
 					err = ctx.RespondText("You don't have an account!")
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 					return
 				}
 				user, err := db.Get(ctx.Event.Author.ID)
 				if err != nil {
-					log.Println(err)
+					logging.Log(err)
 				}
 				if user.Bal < amnt {
 					err = ctx.RespondText("You don't have enough money!")
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 					return
 				}
@@ -273,25 +277,25 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 					user.Bal += amnt * 3
 					err = ctx.RespondText("You won! You now have $" + utils.FormatPrice(user.Bal) + " (You won $" + fmt.Sprint(amnt*3) + ")\n " + utils.RandomChoiceStrings(GambleResponsesWin))
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 				} else {
 					user.Bal -= amnt
 					err = ctx.RespondText("You lost! You now have $" + utils.FormatPrice(user.Bal) + " (You lost $" + fmt.Sprint(amnt) + ")\n" + utils.RandomChoiceStrings(GambleResponsesLose))
 
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 				}
 				err = db.Update(user)
 				if err != nil {
-					log.Println(err)
+					logging.Log(err)
 				}
 				db.Close()
 			} else {
 				err = ctx.RespondText("You're being rate limited!")
 				if err != nil {
-					log.Println(err)
+					logging.Log(err)
 				}
 			}
 		}})

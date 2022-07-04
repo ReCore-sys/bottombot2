@@ -59,11 +59,11 @@ func CombatRoute(router *dgc.Router) *dgc.Router {
 			inputid := args[0]
 			db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 			user, err := db.Get(ctx.Event.Author.ID)
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 			if hasitem(inputid, user) {
 				item, itemindex := getitem(inputid, user)
@@ -78,7 +78,7 @@ func CombatRoute(router *dgc.Router) *dgc.Router {
 					user.Combat.Inv[itemindex] = item
 					err = db.Update(user)
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 					ctx.RespondText("You equip the \"" + item.Name + "\"")
 					db.Close()
@@ -100,11 +100,11 @@ func CombatRoute(router *dgc.Router) *dgc.Router {
 			args := ParseArgs(ctx)
 			db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 			user, err := db.Get(ctx.Event.Author.ID)
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 			defer db.Close()
 			if len(args) == 0 {
@@ -190,11 +190,11 @@ func CombatRoute(router *dgc.Router) *dgc.Router {
 			args := ParseArgs(ctx)
 			db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 			user, err := db.Get(ctx.Event.Author.ID)
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 			if len(args) == 0 {
 				if mon, ok := fights[ctx.Event.Author.ID]; ok {
@@ -223,11 +223,11 @@ func CombatRoute(router *dgc.Router) *dgc.Router {
 							delete(fights, ctx.Event.Author.ID)
 							db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
 							if err != nil {
-								log.Println(err)
+								logging.Log(err)
 							}
 							user, err := db.Get(ctx.Event.Author.ID)
 							if err != nil {
-								log.Println(err)
+								logging.Log(err)
 							}
 							user.Bal += mon.Money
 							db.Update(user)
@@ -244,11 +244,11 @@ func CombatRoute(router *dgc.Router) *dgc.Router {
 								if rarity < prob {
 									db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
 									if err != nil {
-										log.Println(err)
+										logging.Log(err)
 									}
 									user, err := db.Get(ctx.Event.Author.ID)
 									if err != nil {
-										log.Println(err)
+										logging.Log(err)
 									}
 									user.Combat.Inv = append(user.Combat.Inv, item)
 									db.Update(user)
@@ -282,11 +282,11 @@ func CombatRoute(router *dgc.Router) *dgc.Router {
 		Handler: func(ctx *dgc.Ctx) {
 			db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 			user, err := db.Get(ctx.Event.Author.ID)
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 			var generalinv string
 			for _, item := range user.Combat.Inv {
@@ -315,11 +315,11 @@ func GetActiveWeapon(ctx *dgc.Ctx) raven.Item {
 	CFG := config.Config()
 	db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 	user, err := db.Get(ctx.Event.Author.ID)
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 	return user.Combat.ActiveWeapon
 }
@@ -353,13 +353,13 @@ func InitMonsters() {
 	f, err := os.ReadFile("./static/monsters.yaml")
 	if err != nil {
 
-		log.Println(err)
+		logging.Log(err)
 	}
 	var monsters []Monster
 	err = yaml.Unmarshal(f, &monsters)
 	if err != nil {
 		println(2)
-		log.Println(err)
+		logging.Log(err)
 	}
 	for _, mon := range monsters {
 		monstermap[mon.IDname] = mon
@@ -388,16 +388,16 @@ func DMGuser(ctx *dgc.Ctx, amount float64) bool {
 	CFG := config.Config()
 	db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 	user, err := db.Get(ctx.Event.Author.ID)
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 	user.Combat.Health -= amount
 	err = db.Update(user)
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 	db.Close()
 	return true
@@ -478,7 +478,7 @@ func parserarity(rarity float64) string {
 func CreateWeapons() {
 	f, err := os.ReadFile("./static/items.yaml")
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 	type preweapon struct {
 		ID          string    `yaml:"ID"`          // ID is the ID of the item
@@ -495,7 +495,7 @@ func CreateWeapons() {
 	err = yaml.Unmarshal(f, &preitems)
 	if err != nil {
 		println(3)
-		log.Println(err)
+		logging.Log(err)
 	}
 	for _, v := range preitems {
 		rarity := v.Rarity[0] + rand.Float64()*(v.Rarity[1]-v.Rarity[0])
@@ -512,7 +512,7 @@ func CreateWeapons() {
 		})
 	}
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 	for _, item := range items {
 		premadeweapons[item.ID] = item

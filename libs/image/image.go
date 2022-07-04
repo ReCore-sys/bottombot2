@@ -7,7 +7,6 @@ import (
 	"image"
 	"image/jpeg"
 	"io/ioutil"
-	"strconv"
 	"time"
 
 	"io"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/ReCore-sys/bottombot2/libs/config"
 	raven "github.com/ReCore-sys/bottombot2/libs/database"
+	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"github.com/fogleman/gg"
 	"github.com/nfnt/resize"
 	"golang.org/x/image/font"
@@ -79,21 +79,21 @@ func Initialize() {
 	err = yaml.Unmarshal(ranksFile, &Ranks) // Parse the ranks file into the rank struct
 	if err != nil {
 		println(5)
-		log.Println(err)
+		logging.Log(err)
 	}
 
 	backbanner, err = gg.LoadImage("./images/backgroundbanner.png")
 
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 	normalfont, err = gg.LoadFontFace("./static/fonts/firacode.ttf", 28)
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 	titlefont, err = gg.LoadFontFace("./static/fonts/firacode.ttf", 40)
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 
 	cfg = config.Config()
@@ -108,19 +108,19 @@ func Initialize() {
 func Account(uid string) string {
 	db, err := raven.OpenSession(cfg.Ravenhost, cfg.Ravenport, "users")
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 	dc := gg.NewContext(800, 300)
 	userdetail, err := db.Get(uid)
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 	// Add the user's avatar to the image. get it from https://discordapp.com/api/users/uid/avatarhash.png
 	// Check if the user's image is already in images/users
 	if _, err := os.Stat("images/users/" + uid + ".png"); os.IsNotExist(err) {
 		err = DownloadFile(userdetail.PFP, "./images/users/"+uid+".png")
 		if err != nil {
-			log.Println(err)
+			logging.Log(err)
 		}
 
 	} else {
@@ -129,16 +129,16 @@ func Account(uid string) string {
 			time.Sleep(1 * time.Second)
 			err = DownloadFile(userdetail.PFP, "./images/users/"+uid+".png")
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 		}()
 	}
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 	userimg, err := gg.LoadImage("./images/users/" + uid + ".png")
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 
 	var rankname string
@@ -148,7 +148,7 @@ func Account(uid string) string {
 	if urank.Color[0] == -1 {
 		borderimg, err := gg.LoadImage("./images/rankborders/" + rankname + ".png")
 		if err != nil {
-			log.Println(err)
+			logging.Log(err)
 		}
 		dc.DrawImage(resize.Resize(220, 220, borderimg, resize.NearestNeighbor), 40, 40)
 	} else {
@@ -165,22 +165,22 @@ func Account(uid string) string {
 	dc.DrawString(userdetail.Username, 320, 100)
 	dc.SetFontFace(normalfont)
 	dc.DrawString(fmt.Sprintf("Bal: $%.2f", userdetail.Bal), 320, 140)
-	dc.DrawString("Stocks: "+strconv.Itoa(userdetail.Stocks), 320, 170)
+	//dc.DrawString("Stocks: "+strconv.Itoa(userdetail.Stocks), 320, 170)
 	dc.DrawString("Rank: "+rankname, 320, 200)
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 	f, err := os.OpenFile("images/banners/"+uid+".jpeg", os.O_WRONLY|os.O_CREATE, 0755)
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 	err = jpeg.Encode(f, dc.Image(), &jpeg.Options{Quality: 80})
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 	err = f.Close()
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 	dc = nil
 	return "images/banners/" + uid + ".jpeg"

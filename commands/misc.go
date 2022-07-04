@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"time"
 
+	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"github.com/bwmarrin/discordgo"
 	"github.com/inhies/go-bytesize"
 	"github.com/jaypipes/ghw"
@@ -31,7 +31,7 @@ func MiscRoute(router *dgc.Router) *dgc.Router {
 				Description: "This message took " + fmt.Sprint(timediff) + " to send.",
 			})
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 		},
 	})
@@ -48,7 +48,7 @@ func MiscRoute(router *dgc.Router) *dgc.Router {
 				Description: "This is bottombot, the single most fucked up bot in the world.",
 			})
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 		},
 	})
@@ -62,7 +62,7 @@ func MiscRoute(router *dgc.Router) *dgc.Router {
 		Handler: func(ctx *dgc.Ctx) {
 			err := ctx.RespondText("https://www.chromethemer.com/download/hd-wallpapers/another-duck-in-the-snow-3840x2160.jpg")
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 		},
 	})
@@ -75,20 +75,20 @@ func MiscRoute(router *dgc.Router) *dgc.Router {
 		Handler: func(ctx *dgc.Ctx) {
 			mem, err := mem.VirtualMemory()
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 			aaaaaaaaa, err := cpu.Info()
 			cpu := aaaaaaaaa[0]
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 			host, err := host.Info()
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 			gpu, err := ghw.GPU()
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 			fields := []*discordgo.MessageEmbedField{
 				{
@@ -117,7 +117,7 @@ func MiscRoute(router *dgc.Router) *dgc.Router {
 				Fields: fields,
 			})
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 		},
 	})

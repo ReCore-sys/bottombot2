@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/ReCore-sys/bottombot2/libs/config"
+	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"github.com/bwmarrin/discordgo"
 	"github.com/lus/dgc"
 )
@@ -41,7 +41,7 @@ func Registercommands(router *dgc.Router) *dgc.Router {
 				msg := "Available commands: \n" + strings.Join(commands, "\n")
 				err := ctx.RespondText(msg)
 				if err != nil {
-					log.Println(err)
+					logging.Log(err)
 				}
 			} else { // If there are arguments, show the help for the specified command.
 				for _, cmd := range ctx.Router.Commands { // Loop through all commands.
@@ -63,14 +63,14 @@ func Registercommands(router *dgc.Router) *dgc.Router {
 							}}
 						err := ctx.RespondEmbed(embed) // Respond with the embed.
 						if err != nil {
-							log.Println(err)
+							logging.Log(err)
 						}
 						return
 					}
 				}
 				err := ctx.RespondText("No command found with that name") // If no command was found, respond with this message.
 				if err != nil {
-					log.Println(err)
+					logging.Log(err)
 				}
 			}
 		}})

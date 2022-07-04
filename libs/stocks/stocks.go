@@ -3,57 +3,79 @@ package stocks
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"math/rand"
+	"os"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ReCore-sys/bottombot2/libs/config"
 	raven "github.com/ReCore-sys/bottombot2/libs/database"
+	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"github.com/ReCore-sys/bottombot2/libs/utils"
 	"github.com/bwmarrin/discordgo"
+	"github.com/hako/durafmt"
 	"github.com/lus/dgc"
+	"gopkg.in/yaml.v2"
 )
 
-var UntilChange time.Duration
+var UntilChange time.Time
+var volatility = make(map[string]float64)
 
 // It registers a command that allows users to buy and sell stocks
 //
 // router: The router that the command is being registered to
 func RegisterStocks(router *dgc.Router) *dgc.Router {
+
+	file, err := os.ReadFile("volatility.yaml")
+	if err != nil {
+		logging.Log(err)
+	}
+	err = yaml.Unmarshal(file, &volatility)
+	if err != nil {
+		logging.Log(err)
+	}
+
+	for k := range Prices {
+		Prices[k] = 50
+	}
+
 	router.RegisterCmd(&dgc.Command{
 		Name:        "stocks",
 		Description: "Buy and sell stocks",
-		Usage:       "stocks <buy/sell> <amount>",
+		Usage:       "stocks <buy/sell> <ticker> <amount>",
 		Aliases:     []string{"stock", "stonks"},
 		Handler: func(ctx *dgc.Ctx) {
 			CFG := config.Config()
 			db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "users") // Create a RavenDB session
 			if err != nil {
-				log.Println(err)
+				logging.Log(err)
 			}
 
 			defer db.Close()
+			var ticker string
 			args := utils.ParseArgs(ctx)
 			//users := db.GetAll()
-			price := Price
 			if len(args) == 0 {
 				/**============================================
 				 *               Stock price
 				 *=============================================**/
-				response := fmt.Sprintf("The current stock price is $%v\n", price)
-				response += fmt.Sprintf("The price will change in %v.\n", UntilChange)
+				response := "**Current stock prices:**\n\n"
+				for k := range Prices {
+					response += fmt.Sprintf("%s: $%.2f\n", k, Prices[k])
+				}
+				response += fmt.Sprintf("\nThe price will change in %v.", durafmt.Parse(time.Until(UntilChange)).LimitFirstN(2))
 				err = ctx.RespondText(response)
 				if err != nil {
-					log.Println(err)
+					logging.Log(err)
 				}
 			} else if args[0] == "buy" || args[0] == "sell" {
 				if !db.DoesExist(ctx.Event.Author.ID) {
 					err = ctx.RespondText("You don't have an account!")
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 					return
 				}
@@ -63,101 +85,117 @@ func RegisterStocks(router *dgc.Router) *dgc.Router {
 				if len(args) == 1 {
 					err = ctx.RespondText("Please specify an amount.")
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 					return
 				}
-
+				if len(args) == 1 {
+					err = ctx.RespondText("Please specify a ticker.")
+					if err != nil {
+						logging.Log(err)
+					}
+					return
+				} else if !utils.IsIn(strings.ToUpper(args[1]), raven.Tickers) {
+					err = ctx.RespondText("That ticker is not valid.")
+					if err != nil {
+						logging.Log(err)
+					}
+					return
+				}
+				ticker = strings.ToUpper(args[1])
+				var amntint int
 				switch args[0] {
 				case "buy":
 					user, err := db.Get(ctx.Event.Author.ID)
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
-					if !(regexp.MustCompile(`\d+$`).MatchString(args[1])) {
-						if args[1] == "all" {
-							args[1] = fmt.Sprintf("%f", math.Floor(user.Bal/price))
+					if !(regexp.MustCompile(`\d+$`).MatchString(args[2])) {
+						if args[2] == "all" {
+							amntint = int(math.Floor(user.Bal / Prices[ticker]))
 						} else {
 							err = ctx.RespondText("Please specify a valid amount.")
 							if err != nil {
-								log.Println(err)
+								logging.Log(err)
 							}
 							return
 						}
+					} else {
+						amntint, err = strconv.Atoi(args[2])
 					}
-					amntint, err := strconv.Atoi(args[1])
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 					if amntint < 1 {
 						err = ctx.RespondText("You must buy at least 1 stock.")
 						if err != nil {
-							log.Println(err)
+							logging.Log(err)
 						}
 						return
 					}
-					if user.Bal < float64(amntint)*price {
+					if user.Bal < float64(amntint)*Prices[ticker] {
 						err = ctx.RespondText("You don't have enough money!")
 						if err != nil {
-							log.Println(err)
+							logging.Log(err)
 						}
 						return
 					}
 
-					user.Bal -= float64(amntint) * price
-					user.Stocks += amntint
-					err = ctx.RespondText("You now have $" + utils.FormatPrice(user.Bal) + " and " + fmt.Sprint(user.Stocks) + " stocks.")
+					user.Bal -= float64(amntint) * Prices[ticker]
+					user.Stocks[args[1]] += amntint
+					err = ctx.RespondText("You now have $" + utils.FormatPrice(user.Bal) + " and " + fmt.Sprint(user.Stocks[ticker]) + "(" + ticker + ")" + " stocks.")
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 					err = db.Update(user)
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 					db.Close()
 				case "sell":
 					user, err := db.Get(ctx.Event.Author.ID)
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
-					if !(regexp.MustCompile(`\d+$`).MatchString(args[1])) {
-						if args[1] == "all" {
-							args[1] = fmt.Sprintf("%d", user.Stocks)
+					if !(regexp.MustCompile(`\d+$`).MatchString(fmt.Sprint(args[2]))) {
+						if args[2] == "all" {
+							amntint = user.Stocks[ticker]
 						} else {
 							err = ctx.RespondText("Please specify a valid amount.")
 							if err != nil {
-								log.Println(err)
+								logging.Log(err)
 							}
 							return
 						}
+					} else {
+						amntint, err = strconv.Atoi(args[2])
 					}
-					amntint, err := strconv.Atoi(args[1])
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 					if amntint < 1 {
 						err = ctx.RespondText("You must sell at least 1 stock.")
 						if err != nil {
-							log.Println(err)
+							logging.Log(err)
 						}
 						return
 					}
-					if user.Stocks < amntint {
+					if user.Stocks[ticker] < amntint {
 						err = ctx.RespondText("You don't have that many stocks!")
 						if err != nil {
-							log.Println(err)
+							logging.Log(err)
 						}
 						return
 					}
-					user.Bal += float64(amntint) * price
-					user.Stocks -= amntint
-					err = ctx.RespondText("You now have $" + utils.FormatPrice(user.Bal) + " and " + fmt.Sprint(user.Stocks) + " stocks.")
+					user.Bal += float64(amntint) * Prices[ticker]
+					user.Stocks[ticker] -= amntint
+					err = ctx.RespondText("You now have $" + utils.FormatPrice(user.Bal) + " and " + fmt.Sprint(user.Stocks[ticker]) + " stocks from " + ticker + ".")
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 					err = db.Update(user)
 					if err != nil {
-						log.Println(err)
+						logging.Log(err)
 					}
 
 				}
@@ -172,37 +210,48 @@ func RegisterStocks(router *dgc.Router) *dgc.Router {
 //
 // @param discord *discordgo.Session
 func PriceLoop(discord *discordgo.Session) {
+
+	UntilChange = time.Now().Add(20 * time.Minute)
 	for {
 		if utils.IntervalCheck(20 * 1000 * 60) {
-			UntilChange = time.Until(time.Now().Add(20 * time.Minute))
-			Price = math.Round(GeneratePrice()*100) / 100
-			err := discord.UpdateGameStatus(0, fmt.Sprintf("with $%v in stocks", Price))
-			if err != nil {
-				log.Println(err)
+
+			UntilChange = time.Now().Add(20 * time.Minute)
+			for _, ticker := range raven.Tickers {
+				Prices[ticker] = math.Round(GeneratePrice(ticker)*100) / 100
+				err := discord.UpdateGameStatus(0, fmt.Sprintf("with $%v in stocks", Prices))
+				if err != nil {
+					logging.Log(err)
+				}
 			}
 		}
+
 	}
 }
 
-// Price The global price struct. Start with a price of 50.
-var Price = 50.0
+// Prices The global price struct. Start with a price of 50.
+var Prices = make(map[string]float64)
 
 // UpdatePrice updates the global price variable.
-func UpdatePrice(price float64) {
-	println(fmt.Sprintf("Price updated to: $%.2f", price))
+func UpdatePrice(ticker string, price float64) {
 	price = math.Round(price*100) / 100
-	Price = price
+
+	println(fmt.Sprintf("Price updated to: $%.2f", price))
+	Prices[ticker] = price
 }
 
-func GeneratePrice() float64 {
-	volpercent := 4.0
+func GeneratePrice(ticker string) float64 {
+	rand.Seed(time.Now().UnixNano())
+	if Prices[ticker] == 0 {
+		Prices[ticker] = 50
+	}
+	volpercent := volatility[ticker]
 	volatility := float64(volpercent / 100.0)
 	rnd := rand.Float64()
 	changePercent := 2 * volatility * rnd
 	if changePercent > volatility {
 		changePercent -= (2 * volatility)
 	}
-	changeAmount := Price * changePercent
-	newPrice := Price + changeAmount
+	changeAmount := float64(Prices[ticker]) * changePercent
+	newPrice := float64(Prices[ticker]) + changeAmount
 	return newPrice
 }

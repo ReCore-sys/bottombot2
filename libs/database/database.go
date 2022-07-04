@@ -3,10 +3,10 @@ package raven
 import (
 	"errors"
 	"fmt"
-	"log"
 	"reflect"
 	"strconv"
 
+	"github.com/ReCore-sys/bottombot2/libs/logging"
 	ravendb "github.com/ravendb/ravendb-go-client"
 )
 
@@ -21,12 +21,12 @@ type Database struct {
 
 // User is a struct that contains the user information
 type User struct {
-	UID      string  `json:"UID"`      // Unique ID, created by discord
-	Username string  `json:"Username"` // User's username. No identifiers
-	Stocks   int     `json:"Stocks"`   // User's stocks
-	Bal      float64 `json:"Bal"`      // User's balance
-	Rank     int     `json:"Rank"`     // User's rank
-	PFP      string  `json:"PFP"`      // URL to user's profile picture
+	UID      string         `json:"UID"`      // Unique ID, created by discord
+	Username string         `json:"Username"` // User's username. No identifiers
+	Stocks   map[string]int `json:"Stocks"`   // User's stocks
+	Bal      float64        `json:"Bal"`      // User's balance
+	Rank     int            `json:"Rank"`     // User's rank
+	PFP      string         `json:"PFP"`      // URL to user's profile picture
 }
 
 // Item is a struct that holds info about an item
@@ -51,6 +51,8 @@ type Combat struct {
 	ActiveWeapon Item    `json:"ActiveWeapon"` // ActiveWeapon is the ID of the active weapon
 	ActiveArmour []Item  `json:"ActiveArmour"` // ActiveArmour is the IDs of the active armour
 }
+
+var Tickers = []string{"ANR", "GST", "ANL", "BKDR"}
 
 func getDocumentStore(url string, port int, databaseName string) (*ravendb.DocumentStore, error) {
 	serverNodes := []string{url + ":" + strconv.Itoa(port)}
@@ -166,7 +168,7 @@ func (db *Database) GetAll() []User {
 	q := db.Session.QueryCollectionForType(tp)
 	err := q.GetResults(&users)
 	if err != nil {
-		log.Println(fmt.Errorf("store.OpenSession() failed with %s", err))
+		logging.Log(fmt.Errorf("store.OpenSession() failed with %s", err))
 	}
 	var dupe []User
 	for _, user := range users {

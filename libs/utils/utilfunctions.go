@@ -2,7 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"math/rand"
 	"os"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	raven "github.com/ReCore-sys/bottombot2/libs/database"
+	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"github.com/bwmarrin/discordgo"
 	"github.com/lus/dgc"
 )
@@ -73,7 +73,7 @@ func SendFile(file *os.File, ctx *dgc.Ctx, s *discordgo.Session) {
 	}
 	_, err := s.ChannelMessageSendComplex(ctx.Event.ChannelID, ms)
 	if err != nil {
-		log.Println(err)
+		logging.Log(err)
 	}
 }
 
@@ -114,4 +114,13 @@ func ParsePing(arg string) string {
 		return ""
 	}
 	return result[1]
+}
+
+func IsIn(item string, itemlist []string) bool {
+	for _, v := range itemlist {
+		if item == v {
+			return true
+		}
+	}
+	return false
 }

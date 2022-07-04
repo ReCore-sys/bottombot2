@@ -75,17 +75,11 @@ func decrypt(data []byte, passphrase string) []byte {
 
 func TestRaven(t *testing.T) {
 	CFG := config.Config()
-	db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "users") // Open database session
-	if err != nil {                                                     // Check if session is opened
+	_, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "users") // Open database session
+	if err != nil {                                                    // Check if session is opened
 		t.Errorf("Unable to open database session: %s", err)
 		return
-	}
-	res, err := db.Get("0") // Get user with ID 0. This account is special and should not be deleted or edited
-	if err != nil {
-		t.Errorf("Unable to get user: %s", err)
-	}
-	if res.Username != "TestUser" {
-		t.Errorf("Ravendb test failed: wanted %s, got %s", "\"TestUser\"", res.Username)
+
 	}
 }
 
@@ -152,9 +146,12 @@ func TestValidUsers(t *testing.T) {
 		}
 		if usr.Bal < 0 { // Check if balance is negative
 			t.Errorf("User %s has negative balance", usr.UID)
-		}
-		if usr.Stocks < 0 { // Check if stocks is negative
-			t.Errorf("User %s has negative stock count", usr.UID)
+
+			for _, ticker := range raven.Tickers {
+				if usr.Stocks[ticker] < 0 { // Check if stocks is negative
+					t.Errorf("User %s has negative stock count", usr.UID)
+				}
+			}
 		}
 		r, err := regexp.Compile(`\d+`) // Check if username contains numbers
 		if err != nil {
@@ -217,13 +214,4 @@ func TestNumformatting(t *testing.T) {
 	if utils.FormatPrice(num3) != "120,000" {
 		t.Errorf("Number formatting failed: %s", utils.FormatPrice(num3))
 	}
-}
-
-func BenchmarkIter(b *testing.B) {
-	users := utils.Createusers(200)
-	for i := 0; i < b.N; i++ {
-		r := utils.RandomChoiceUsers(users)
-		utils.IndexOfUsers(r, users)
-	}
-
 }

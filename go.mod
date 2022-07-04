@@ -16,6 +16,12 @@ require (
 )
 
 require (
+	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b // indirect
+	github.com/logrusorgru/aurora v0.0.0-20181002194514-a7b3b318ed4e // indirect
+	github.com/ztrue/tracerr v0.3.0 // indirect
+)
+
+require (
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -33,6 +39,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	github.com/zekroTJA/timedmap v0.0.0-20200518230343-de9b879d109a // indirect
 	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b // indirect
+	golang.org/x/exp v0.0.0-20220613132600-b0d781184e0d
 	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8 // indirect
 	howett.net/plist v1.0.0 // indirect
 )

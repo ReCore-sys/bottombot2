@@ -218,10 +218,6 @@ func PriceLoop(discord *discordgo.Session) {
 			UntilChange = time.Now().Add(20 * time.Minute)
 			for _, ticker := range raven.Tickers {
 				Prices[ticker] = math.Round(GeneratePrice(ticker)*100) / 100
-				err := discord.UpdateGameStatus(0, fmt.Sprintf("with $%v in stocks", Prices))
-				if err != nil {
-					logging.Log(err)
-				}
 			}
 		}
 

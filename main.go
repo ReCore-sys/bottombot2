@@ -14,6 +14,7 @@ import (
 	"github.com/ReCore-sys/bottombot2/libs/image"
 	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"github.com/ReCore-sys/bottombot2/libs/stocks"
+	"github.com/ReCore-sys/bottombot2/libs/utils"
 	"github.com/bwmarrin/discordgo"
 	"github.com/lus/dgc"
 )
@@ -49,12 +50,7 @@ func main() {
 	if err != nil {
 		logging.Log(err)
 	}
-
-	err = discord.UpdateListeningStatus("the IRS bang on my door")
-
-	if err != nil {
-		logging.Log(err)
-	}
+	go utils.LoopStatus(discord)
 
 	fmt.Println("Bot started!") // Print a message to the console to let the user know the bot is online.
 	// Wait here until CTRL-C or other term signal is received.

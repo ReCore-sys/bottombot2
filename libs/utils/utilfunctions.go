@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"math/rand"
@@ -123,4 +124,43 @@ func IsIn(item string, itemlist []string) bool {
 		}
 	}
 	return false
+}
+
+func LoopStatus(discord *discordgo.Session) {
+	for {
+		f, err := os.ReadFile("static/status.json")
+		if err != nil {
+			logging.Log(err)
+			continue
+		}
+		var status [][2]string
+		err = json.Unmarshal(f, &status)
+		if err != nil {
+			logging.Log(err)
+			continue
+		}
+		var choice [2]string
+		rand.Seed(time.Now().UnixNano())
+		choice = status[rand.Intn(len(status))]
+		switch choice[0] {
+		case "l":
+			err := discord.UpdateListeningStatus(choice[1])
+			if err != nil {
+				logging.Log(err)
+			}
+		case "p":
+			err := discord.UpdateGameStatus(0, choice[1])
+			if err != nil {
+				logging.Log(err)
+			}
+		case "s":
+			err := discord.UpdateStreamingStatus(0, choice[1], "https://www.twitch.tv/lolgetcucked")
+			if err != nil {
+				logging.Log(err)
+			}
+		}
+
+		time.Sleep(time.Minute * 30)
+
+	}
 }

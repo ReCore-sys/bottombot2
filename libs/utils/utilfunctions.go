@@ -148,16 +148,19 @@ func LoopStatus(discord *discordgo.Session) {
 			if err != nil {
 				logging.Log(err)
 			}
+			println("Status updated: Listening to " + choice[1])
 		case "p":
 			err := discord.UpdateGameStatus(0, choice[1])
 			if err != nil {
 				logging.Log(err)
 			}
+			println("Status updated: Playing " + choice[1])
 		case "s":
 			err := discord.UpdateStreamingStatus(0, choice[1], "https://www.twitch.tv/lolgetcucked")
 			if err != nil {
 				logging.Log(err)
 			}
+			println("Status updated: Streaming " + choice[1])
 		}
 
 		time.Sleep(time.Minute * 30)

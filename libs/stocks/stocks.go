@@ -72,6 +72,14 @@ func RegisterStocks(router *dgc.Router) *dgc.Router {
 					logging.Log(err)
 				}
 			} else if args[0] == "buy" || args[0] == "sell" {
+				if len(args) < 3 {
+					err = ctx.RespondText("Usage: stocks <buy/sell> <ticker> <amount>")
+					if err != nil {
+						logging.Log(err)
+					}
+					return
+				}
+				ticker = strings.ToUpper(args[1])
 				if !db.DoesExist(ctx.Event.Author.ID) {
 					err = ctx.RespondText("You don't have an account!")
 					if err != nil {
@@ -95,14 +103,13 @@ func RegisterStocks(router *dgc.Router) *dgc.Router {
 						logging.Log(err)
 					}
 					return
-				} else if !utils.IsIn(strings.ToUpper(args[1]), raven.Tickers) {
+				} else if !utils.IsIn(ticker, raven.Tickers) {
 					err = ctx.RespondText("That ticker is not valid.")
 					if err != nil {
 						logging.Log(err)
 					}
 					return
 				}
-				ticker = strings.ToUpper(args[1])
 				var amntint int
 				switch args[0] {
 				case "buy":
@@ -198,6 +205,20 @@ func RegisterStocks(router *dgc.Router) *dgc.Router {
 						logging.Log(err)
 					}
 
+				}
+
+			} else if args[0] == "amount" {
+				user, err := db.Get(ctx.Event.Author.ID)
+				if err != nil {
+					logging.Log(err)
+				}
+				var stocks string
+				for ticker, amnt := range user.Stocks {
+					stocks += ticker + ": " + fmt.Sprint(amnt) + "\n"
+				}
+				err = ctx.RespondText("You have:\n" + stocks)
+				if err != nil {
+					logging.Log(err)
 				}
 			}
 		},

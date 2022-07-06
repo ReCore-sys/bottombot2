@@ -10,7 +10,8 @@ import (
 //
 // @param error err The error you want to log
 func Log(err error) {
-	tracerr.PrintSourceColor(err)
+
+	tracerr.PrintSourceColor(tracerr.Wrap(err))
 }
 
 // `LogString` takes a string and prints it to the console with a stack trace

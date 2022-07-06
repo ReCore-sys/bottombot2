@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -19,6 +19,7 @@ import (
 	"github.com/ReCore-sys/bottombot2/libs/stocks"
 	"github.com/ReCore-sys/bottombot2/libs/utils"
 	"github.com/bwmarrin/discordgo"
+	"github.com/hako/durafmt"
 	"github.com/lus/dgc"
 	"gopkg.in/yaml.v2"
 )
@@ -33,6 +34,7 @@ type rank struct {
 // Ranks is the global rank struct.
 var Ranks []rank
 var rateLimits = make(map[string]map[string]time.Time)
+var dailys = make(map[string]time.Time)
 
 func ratecheck(ctx *dgc.Ctx) bool {
 	// When the command is run, log the user's ID and the command name in the map wth the time they sent it.
@@ -56,11 +58,20 @@ func ratecheck(ctx *dgc.Ctx) bool {
 // EcoRoute is the router for the economy/account commands.
 func EcoRoute(router *dgc.Router) *dgc.Router {
 
+	f, err := os.ReadFile("static/daily.json")
+	if err != nil {
+		logging.Log(err)
+	}
+	err = json.Unmarshal(f, &dailys)
+	if err != nil {
+		logging.Log(err)
+	}
+
 	// Read static/ranks.yaml and parse it into a rank struct
 	ranksFile, err := ioutil.ReadFile("static/ranks.yaml") // Read the ranks file
 	if err != nil {
 
-		log.Fatal(err)
+		logging.Log(err)
 	}
 	err = yaml.Unmarshal(ranksFile, &Ranks) // Parse the ranks file into the rank struct
 	if err != nil {
@@ -302,6 +313,76 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 	println("Registered command: gamble")
 
 	router = stocks.RegisterStocks(router)
+
+	router.RegisterCmd(&dgc.Command{
+		Name:        "daily",
+		Aliases:     []string{},
+		Description: "grants a daily bonus",
+		Usage:       "daily",
+		Handler: func(ctx *dgc.Ctx) {
+			db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "users") // Create a RavenDB session
+			if err != nil {
+				logging.Log(err)
+			}
+			if !db.DoesExist(ctx.Event.Author.ID) { // Check if the user already has an account
+				err = ctx.RespondText("You don't have an account!")
+				if err != nil {
+					logging.Log(err)
+				}
+				return
+			}
+			user, err := db.Get(ctx.Event.Author.ID)
+			if err != nil {
+				logging.Log(err)
+			}
+			if _, ok := dailys[ctx.Event.Author.ID]; ok {
+				if dailys[ctx.Event.Author.ID].After(time.Now().Add(time.Hour * 24)) {
+
+					dailys[ctx.Event.Author.ID] = time.Now()
+					user.Bal += 100
+					err = ctx.RespondText("You received $" + utils.FormatPrice(100) + " for your daily!")
+					if err != nil {
+						logging.Log(err)
+					}
+					err = db.Update(user)
+					if err != nil {
+						logging.Log(err)
+					}
+					dailys[ctx.Event.Author.ID] = time.Now()
+					db.Close()
+				} else {
+					err = ctx.RespondText(fmt.Sprintf("You have already claimed your daily! Try again in %s", durafmt.Parse(time.Until(dailys[ctx.Event.Author.ID].Add(time.Hour*24))).LimitFirstN(2)))
+					if err != nil {
+						logging.Log(err)
+					}
+					return
+				}
+			} else {
+				dailys[ctx.Event.Author.ID] = time.Now()
+				user.Bal += 100
+				err = ctx.RespondText("You received $" + utils.FormatPrice(100) + " for your daily!")
+				if err != nil {
+					logging.Log(err)
+				}
+				err = db.Update(user)
+				if err != nil {
+					logging.Log(err)
+				}
+				db.Close()
+
+				dailys[ctx.Event.Author.ID] = time.Now()
+			}
+			f, err := os.OpenFile("static/dailys.json", os.O_RDWR|os.O_CREATE, 0644)
+			if err != nil {
+				logging.Log(err)
+			}
+			defer f.Close()
+			err = json.NewEncoder(f).Encode(dailys)
+			if err != nil {
+				logging.Log(err)
+			}
+
+		}})
 
 	return router
 }

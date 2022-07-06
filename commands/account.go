@@ -57,14 +57,15 @@ func ratecheck(ctx *dgc.Ctx) bool {
 
 // EcoRoute is the router for the economy/account commands.
 func EcoRoute(router *dgc.Router) *dgc.Router {
-
-	f, err := os.ReadFile("static/daily.json")
-	if err != nil {
-		logging.Log(err)
-	}
-	err = json.Unmarshal(f, &dailys)
-	if err != nil {
-		logging.Log(err)
+	if utils.DoesFileExist("./static/dailys.json") {
+		f, err := os.ReadFile("./static/dailys.json")
+		if err != nil {
+			logging.Log(err)
+		}
+		err = json.Unmarshal(f, &dailys)
+		if err != nil {
+			logging.Log(err)
+		}
 	}
 
 	// Read static/ranks.yaml and parse it into a rank struct

@@ -149,7 +149,7 @@ func RegisterStocks(router *dgc.Router) *dgc.Router {
 					}
 
 					user.Bal -= float64(amntint) * Prices[ticker]
-					user.Stocks[args[1]] += amntint
+					user.Stocks[ticker] += amntint
 					err = ctx.RespondText("You now have $" + utils.FormatPrice(user.Bal) + " and " + fmt.Sprint(user.Stocks[ticker]) + "(" + ticker + ")" + " stocks.")
 					if err != nil {
 						logging.Log(err)

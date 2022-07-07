@@ -16,8 +16,10 @@ require (
 )
 
 require (
+	github.com/Arafatk/glot v0.0.0-20180312013246-79d5219000f0 // indirect
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b // indirect
 	github.com/logrusorgru/aurora v0.0.0-20181002194514-a7b3b318ed4e // indirect
+	github.com/wcharczuk/go-chart v2.0.1+incompatible // indirect
 	github.com/ztrue/tracerr v0.3.0 // indirect
 )
 

@@ -385,5 +385,30 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 
 		}})
 
+	router.RegisterCmd(&dgc.Command{
+		Name:        "prices",
+		Aliases:     []string{},
+		Description: "Shows the previous prices of the stocks",
+		Usage:       "prices",
+		Handler: func(ctx *dgc.Ctx) {
+			file, err := os.Open("graph.png")
+			if err != nil {
+				logging.Log(err)
+			}
+			ms := &discordgo.MessageSend{
+				Files: []*discordgo.File{
+					{
+						Name:   "price.jpeg",
+						Reader: file,
+					},
+				},
+			}
+			_, err = s.ChannelMessageSendComplex(ctx.Event.ChannelID, ms)
+			if err != nil {
+				logging.Log(err)
+			}
+		},
+	})
+
 	return router
 }

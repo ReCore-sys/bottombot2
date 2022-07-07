@@ -6,6 +6,7 @@ import (
 	"crypto/md5"
 	crand "crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/ReCore-sys/bottombot2/libs/config"
 	raven "github.com/ReCore-sys/bottombot2/libs/database"
+	"github.com/ReCore-sys/bottombot2/libs/stocks"
 	"github.com/ReCore-sys/bottombot2/libs/utils"
 )
 
@@ -214,4 +216,17 @@ func TestNumformatting(t *testing.T) {
 	if utils.FormatPrice(num3) != "120,000" {
 		t.Errorf("Number formatting failed: %s", utils.FormatPrice(num3))
 	}
+}
+
+func TestGraph(t *testing.T) {
+	f, err := os.ReadFile("static/prices.json")
+	if err != nil {
+		t.Errorf("File read failed: %s", err)
+	}
+	var prices []map[string]float64
+	err = json.Unmarshal(f, &prices)
+	if err != nil {
+		t.Errorf("JSON unmarshal failed: %s", err)
+	}
+	stocks.CreateGraph(prices)
 }

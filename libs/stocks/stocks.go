@@ -2,6 +2,7 @@
 package stocks
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"math/rand"
@@ -150,7 +151,7 @@ func RegisterStocks(router *dgc.Router) *dgc.Router {
 
 					user.Bal -= float64(amntint) * Prices[ticker]
 					user.Stocks[ticker] += amntint
-					err = ctx.RespondText("You now have $" + utils.FormatPrice(user.Bal) + " and " + fmt.Sprint(user.Stocks[ticker]) + "(" + ticker + ")" + " stocks.")
+					err = ctx.RespondText("You now have $" + utils.FormatPrice(user.Bal) + " and " + fmt.Sprint(user.Stocks[ticker]) + " (" + ticker + ")" + " stocks.")
 					if err != nil {
 						logging.Log(err)
 					}
@@ -240,6 +241,7 @@ func PriceLoop(discord *discordgo.Session) {
 			for _, ticker := range raven.Tickers {
 				Prices[ticker] = math.Round(GeneratePrice(ticker)*100) / 100
 			}
+
 		}
 
 	}
@@ -271,4 +273,32 @@ func GeneratePrice(ticker string) float64 {
 	changeAmount := float64(Prices[ticker]) * changePercent
 	newPrice := float64(Prices[ticker]) + changeAmount
 	return newPrice
+}
+
+func UpdatePricesFile(prices map[string]float64) {
+	f, err := os.OpenFile("static/prices.json", os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		logging.Log(err)
+	}
+	var arrayofprices []map[string]float64
+	data, err := os.ReadFile("static/prices.json")
+	if err != nil {
+		logging.Log(err)
+	}
+	err = json.Unmarshal(data, &arrayofprices)
+	if err != nil {
+		logging.Log(err)
+	}
+	arrayofprices = append(arrayofprices, prices)
+	if len(arrayofprices) > 360 {
+		arrayofprices = arrayofprices[len(arrayofprices)-360:]
+	}
+	err = json.NewEncoder(f).Encode(arrayofprices)
+	if err != nil {
+		logging.Log(err)
+	}
+	err = f.Close()
+	if err != nil {
+		logging.Log(err)
+	}
 }

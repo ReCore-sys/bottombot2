@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/ReCore-sys/bottombot2/libs/logging"
+	"github.com/lus/dgc"
 	ravendb "github.com/ravendb/ravendb-go-client"
 )
 
@@ -27,29 +28,19 @@ type User struct {
 	Bal      float64        `json:"Bal"`      // User's balance
 	Rank     int            `json:"Rank"`     // User's rank
 	PFP      string         `json:"PFP"`      // URL to user's profile picture
+	Inv      []string       `json:"Inv"`      // User's inventory as ID's of items
+	Equipped []string       `json:"Equipped"` // User's equipped items as ID's of items
 }
 
 // Item is a struct that holds info about an item
 type Item struct {
-	ID          string     `json:"ID"`          // ID is the ID of the item
-	Name        string     `json:"Name"`        // Name is the name of the item
-	Type        string     `json:"Type"`        // Type is the type of the item (weapon, armour, etc)
-	Description string     `json:"Description"` // Description is a description of the item
-	Rarity      [2]float64 `json:"Rarity"`      // Rarity is the rarity of the item
-	Damage      [2]float64 `json:"Damage"`      // Damage is the damage of the item.
-	OnUse       string     `json:"Onuse"`       // When the item is used, this string is looked up in the map of item use functions and run
-	IsActive    bool       `json:"IsActive"`    // IsActive is whether the item is equiped or not
-}
-
-// Combat is a struct that holds info regarding combat stuff like health, items, level, etc
-type Combat struct {
-	Health       float64 `json:"Health"`       // Health is the amount of health the user has
-	HealthMax    float64 `json:"HealthMax"`    // HealthMax is the max amount of health the user can have
-	Level        int     `json:"Level"`        // Level is the level of the user
-	XP           int     `json:"XP"`           // XP is the amount of XP the user has
-	Inv          []Item  `json:"Inv"`          // Inv is the inventory of the user. Items are stored as a map of item ID to quantity
-	ActiveWeapon Item    `json:"ActiveWeapon"` // ActiveWeapon is the ID of the active weapon
-	ActiveArmour []Item  `json:"ActiveArmour"` // ActiveArmour is the IDs of the active armour
+	ID          string                                                                   `json:"ID"`          // ID is the ID of the item
+	Name        string                                                                   `json:"Name"`        // Name is the name of the item
+	Description []string                                                                 `json:"Description"` // Description is a description of the item
+	Price       float64                                                                  `json:"Price"`       // Price is the price of the item
+	Defend      func(attacker User, defender User, chance float64, ctx *dgc.Ctx) float64 // The function to execute from a player when they get robbed
+	Attack      func(attacker User, defender User, chance float64, ctx *dgc.Ctx) float64 // The function to execute from a player when they attack someone else
+	Image       string                                                                   `json:"Image"` // Image is the path to the item's image
 }
 
 var Tickers = []string{"ANR", "GST", "ANL", "BKDR"}

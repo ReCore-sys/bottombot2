@@ -24,6 +24,7 @@ func Registercommands(router *dgc.Router) *dgc.Router {
 	cfg := config.Config()
 	router = MiscRoute(router)
 	router = EcoRoute(router)
+	//router = StoreRoute(router)
 	//router = CombatRoute(router)
 
 	router.RegisterCmd(&dgc.Command{ // Add the help command

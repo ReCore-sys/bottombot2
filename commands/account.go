@@ -337,7 +337,7 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 				logging.Log(err)
 			}
 			if _, ok := dailys[ctx.Event.Author.ID]; ok {
-				if dailys[ctx.Event.Author.ID].After(time.Now().Add(time.Hour * 24)) {
+				if dailys[ctx.Event.Author.ID].Unix()+(24*60*60) < time.Now().Unix() {
 
 					dailys[ctx.Event.Author.ID] = time.Now()
 					user.Bal += 100

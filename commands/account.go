@@ -391,6 +391,16 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 		Description: "Shows the previous prices of the stocks",
 		Usage:       "prices",
 		Handler: func(ctx *dgc.Ctx) {
+			data, err := os.ReadFile("static/prices.json")
+			if err != nil {
+				logging.Log(err)
+			}
+			var prices []map[string]float64
+			err = json.Unmarshal(data, &prices)
+			if err != nil {
+				logging.Log(err)
+			}
+			stocks.CreateGraph(prices)
 			file, err := os.Open("graph.png")
 			if err != nil {
 				logging.Log(err)

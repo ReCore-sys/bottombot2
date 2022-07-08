@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -64,8 +65,10 @@ func RegisterStocks(router *dgc.Router) *dgc.Router {
 				 *               Stock price
 				 *=============================================**/
 				response := "**Current stock prices:**\n\n"
-				for k := range Prices {
-					response += fmt.Sprintf("%s: $%.2f\n", k, Prices[k])
+				sortedtickers := raven.Tickers
+				sort.Strings(sortedtickers)
+				for _, ticker := range sortedtickers {
+					response += fmt.Sprintf("%s: $%.2f\n", ticker, Prices[ticker])
 				}
 				response += fmt.Sprintf("\nThe price will change in %v.", durafmt.Parse(time.Until(UntilChange)).LimitFirstN(2))
 				err = ctx.RespondText(response)
@@ -241,6 +244,7 @@ func PriceLoop(discord *discordgo.Session) {
 			for _, ticker := range raven.Tickers {
 				Prices[ticker] = math.Round(GeneratePrice(ticker)*100) / 100
 			}
+			UpdatePricesFile(Prices)
 
 		}
 

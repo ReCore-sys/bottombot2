@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/ReCore-sys/bottombot2/libs/config"
-	raven "github.com/ReCore-sys/bottombot2/libs/database"
+	mongo "github.com/ReCore-sys/bottombot2/libs/database"
 	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"github.com/ReCore-sys/bottombot2/libs/utils"
 	"github.com/bwmarrin/discordgo"
@@ -51,7 +51,7 @@ func RegisterStocks(router *dgc.Router) *dgc.Router {
 		Aliases:     []string{"stock", "stonks"},
 		Handler: func(ctx *dgc.Ctx) {
 			CFG := config.Config()
-			db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "users") // Create a RavenDB session
+			db, err := mongo.OpenSession(CFG.Server, CFG.Port, CFG.Collection) // Create a RavenDB session
 			if err != nil {
 				logging.Log(err)
 			}
@@ -65,7 +65,7 @@ func RegisterStocks(router *dgc.Router) *dgc.Router {
 				 *               Stock price
 				 *=============================================**/
 				response := "**Current stock prices:**\n\n"
-				sortedtickers := raven.Tickers
+				sortedtickers := mongo.Tickers
 				sort.Strings(sortedtickers)
 				for _, ticker := range sortedtickers {
 					response += fmt.Sprintf("%s: $%.2f\n", ticker, Prices[ticker])
@@ -107,7 +107,7 @@ func RegisterStocks(router *dgc.Router) *dgc.Router {
 						logging.Log(err)
 					}
 					return
-				} else if !utils.IsIn(ticker, raven.Tickers) {
+				} else if !utils.IsIn(ticker, mongo.Tickers) {
 					err = ctx.RespondText("That ticker is not valid.")
 					if err != nil {
 						logging.Log(err)
@@ -241,7 +241,7 @@ func PriceLoop(discord *discordgo.Session) {
 		if utils.IntervalCheck(20 * 1000 * 60) {
 
 			UntilChange = time.Now().Add(20 * time.Minute)
-			for _, ticker := range raven.Tickers {
+			for _, ticker := range mongo.Tickers {
 				Prices[ticker] = math.Round(GeneratePrice(ticker)*100) / 100
 			}
 			UpdatePricesFile(Prices)

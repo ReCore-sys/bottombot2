@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/ReCore-sys/bottombot2/libs/config"
-	raven "github.com/ReCore-sys/bottombot2/libs/database"
+	"github.com/ReCore-sys/bottombot2/libs/database"
 	"github.com/ReCore-sys/bottombot2/libs/utils"
 	"github.com/lus/dgc"
 	"gopkg.in/yaml.v2"
@@ -57,7 +57,7 @@ func CombatRoute(router *dgc.Router) *dgc.Router {
 				return
 			}
 			inputid := args[0]
-			db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
+			db, err := raven.OpenSession(CFG.Server, CFG.Port, CFG.Collection)
 			if err != nil {
 				logging.Log(err)
 			}
@@ -98,7 +98,7 @@ func CombatRoute(router *dgc.Router) *dgc.Router {
 		Aliases:     []string{"i"},
 		Handler: func(ctx *dgc.Ctx) {
 			args := ParseArgs(ctx)
-			db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
+			db, err := raven.OpenSession(CFG.Server, CFG.Port, CFG.Collection)
 			if err != nil {
 				logging.Log(err)
 			}
@@ -188,7 +188,7 @@ func CombatRoute(router *dgc.Router) *dgc.Router {
 		Usage:       "fight",
 		Handler: func(ctx *dgc.Ctx) {
 			args := ParseArgs(ctx)
-			db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
+			db, err := raven.OpenSession(CFG.Server, CFG.Port, CFG.Collection)
 			if err != nil {
 				logging.Log(err)
 			}
@@ -221,7 +221,7 @@ func CombatRoute(router *dgc.Router) *dgc.Router {
 						if mon.Health <= 0 {
 							ctx.RespondText("You killed the " + mon.Name + " and earned $" + fmt.Sprint(mon.Money) + "!")
 							delete(fights, ctx.Event.Author.ID)
-							db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
+							db, err := raven.OpenSession(CFG.Server, CFG.Port, CFG.Collection)
 							if err != nil {
 								logging.Log(err)
 							}
@@ -242,7 +242,7 @@ func CombatRoute(router *dgc.Router) *dgc.Router {
 								rand.Seed(time.Now().UnixNano())
 								rarity := rand.Float64()
 								if rarity < prob {
-									db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
+									db, err := raven.OpenSession(CFG.Server, CFG.Port, CFG.Collection)
 									if err != nil {
 										logging.Log(err)
 									}
@@ -280,7 +280,7 @@ func CombatRoute(router *dgc.Router) *dgc.Router {
 		Description: "Shows your inv",
 		Usage:       "inv",
 		Handler: func(ctx *dgc.Ctx) {
-			db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
+			db, err := raven.OpenSession(CFG.Server, CFG.Port, CFG.Collection)
 			if err != nil {
 				logging.Log(err)
 			}
@@ -313,7 +313,7 @@ func isinmapMonster(key string) bool {
 // GetActiveWeapon returns the active weapon for a ctx object
 func GetActiveWeapon(ctx *dgc.Ctx) raven.Item {
 	CFG := config.Config()
-	db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
+	db, err := raven.OpenSession(CFG.Server, CFG.Port, CFG.Collection)
 	if err != nil {
 		logging.Log(err)
 	}
@@ -386,7 +386,7 @@ func DMGmonster(ctx *dgc.Ctx, amount float64) bool {
 // DMGuser is a simple function to damage a user a certain amount
 func DMGuser(ctx *dgc.Ctx, amount float64) bool {
 	CFG := config.Config()
-	db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "Users")
+	db, err := raven.OpenSession(CFG.Server, CFG.Port, CFG.Collection)
 	if err != nil {
 		logging.Log(err)
 	}

@@ -1,3 +1,4 @@
 git pull -f
 go build
-./bottombot2
+CURRDIR = .
+./$CURRDIR

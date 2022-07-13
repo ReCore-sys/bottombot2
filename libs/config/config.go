@@ -10,10 +10,12 @@ import (
 
 // Configs is the config struct
 type Configs struct {
-	Token     string `yaml:"Token"`
-	Prefix    string `yaml:"Prefix"`
-	Ravenhost string `yaml:"ravenhost"`
-	Ravenport int    `yaml:"ravenport"`
+	Token      string `yaml:"Token"`
+	Prefix     string `yaml:"Prefix"`
+	Server     string `yaml:"host"`
+	Port       int    `yaml:"port"`
+	Database   string `yaml:"database"`
+	Collection string `yaml:"collection"`
 }
 
 // Config Reads the config file and returns a Configs struct

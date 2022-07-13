@@ -12,7 +12,7 @@ import (
 	"math/rand"
 
 	"github.com/ReCore-sys/bottombot2/libs/config"
-	raven "github.com/ReCore-sys/bottombot2/libs/database"
+	mongo "github.com/ReCore-sys/bottombot2/libs/database"
 	"github.com/ReCore-sys/bottombot2/libs/image"
 	img "github.com/ReCore-sys/bottombot2/libs/image"
 	"github.com/ReCore-sys/bottombot2/libs/logging"
@@ -87,7 +87,7 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 		Usage:       "account",
 		Aliases:     []string{"acc", "bal", "balance", "me"},
 		Handler: func(ctx *dgc.Ctx) {
-			db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "users") // Create a RavenDB session
+			db, err := mongo.OpenSession(CFG.Server, CFG.Port, CFG.Collection) // Create a RavenDB session
 			if err != nil {
 				logging.Log(err)
 			}
@@ -147,7 +147,7 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 			} else { // Create a new account
 				if target == ctx.Event.Author.ID {
 
-					usr := raven.User{
+					usr := mongo.User{
 						UID:      ctx.Event.Author.ID,       // Set the user's ID
 						Username: ctx.Event.Author.Username, // Set the user's username
 						Bal:      100,
@@ -155,7 +155,7 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 						PFP:      "https://cdn.discordapp.com/avatars/" + ctx.Event.Author.ID + "/" + ctx.Event.Message.Author.Avatar + ".png",
 					}
 					usr.Stocks = make(map[string]int)
-					for _, ticker := range raven.Tickers {
+					for _, ticker := range mongo.Tickers {
 						usr.Stocks[ticker] = 0
 					}
 					err = db.Set(usr)
@@ -225,7 +225,7 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 		Aliases:     []string{"bet"},
 		Handler: func(ctx *dgc.Ctx) {
 			if ratecheck(ctx) {
-				db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "users") // Create a RavenDB session
+				db, err := mongo.OpenSession(CFG.Server, CFG.Port, CFG.Collection) // Create a RavenDB session
 				if err != nil {
 					logging.Log(err)
 				}
@@ -321,7 +321,7 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 		Description: "grants a daily bonus",
 		Usage:       "daily",
 		Handler: func(ctx *dgc.Ctx) {
-			db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "users") // Create a RavenDB session
+			db, err := mongo.OpenSession(CFG.Server, CFG.Port, CFG.Collection) // Create a RavenDB session
 			if err != nil {
 				logging.Log(err)
 			}

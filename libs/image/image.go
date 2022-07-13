@@ -15,7 +15,7 @@ import (
 	"os"
 
 	"github.com/ReCore-sys/bottombot2/libs/config"
-	raven "github.com/ReCore-sys/bottombot2/libs/database"
+	mongo "github.com/ReCore-sys/bottombot2/libs/database"
 	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"github.com/fogleman/gg"
 	"github.com/nfnt/resize"
@@ -65,9 +65,9 @@ var (
 	backbanner image.Image
 	normalfont font.Face
 	titlefont  font.Face
-	cfg        config.Configs
 	rankmap    map[int]rank
 )
+var CFG = config.Config()
 
 // Initialize is a function to initialize the image library.
 func Initialize() {
@@ -96,8 +96,6 @@ func Initialize() {
 		logging.Log(err)
 	}
 
-	cfg = config.Config()
-
 	rankmap = make(map[int]rank)
 	for _, v := range Ranks {
 		rankmap[v.ID] = v
@@ -106,7 +104,7 @@ func Initialize() {
 
 // Account is a function to create a user banner if needed then return the path to it
 func Account(uid string) string {
-	db, err := raven.OpenSession(cfg.Ravenhost, cfg.Ravenport, "users")
+	db, err := mongo.OpenSession(CFG.Server, CFG.Port, CFG.Collection)
 	if err != nil {
 		logging.Log(err)
 	}

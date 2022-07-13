@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/ReCore-sys/bottombot2/libs/config"
-	raven "github.com/ReCore-sys/bottombot2/libs/database"
+	mongo "github.com/ReCore-sys/bottombot2/libs/database"
 	"github.com/ReCore-sys/bottombot2/libs/stocks"
 	"github.com/ReCore-sys/bottombot2/libs/utils"
 )
@@ -75,10 +75,10 @@ func decrypt(data []byte, passphrase string) []byte {
 	return plaintext
 }
 
-func TestRaven(t *testing.T) {
+func TestDB(t *testing.T) {
 	CFG := config.Config()
-	_, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "users") // Open database session
-	if err != nil {                                                    // Check if session is opened
+	_, err := mongo.OpenSession(CFG.Server, CFG.Port, CFG.Collection) // Open database session
+	if err != nil {                                                   // Check if session is opened
 		t.Errorf("Unable to open database session: %s", err)
 		return
 
@@ -91,7 +91,7 @@ func TestConnection(t *testing.T) {
 	ips := []string{
 		"https://www.google.com/",
 		"https://gateway.discord.gg/",
-		CFG.Ravenhost + ":" + strconv.Itoa(CFG.Ravenport),
+		"http://" + CFG.Server + ":" + strconv.Itoa(CFG.Port),
 	}
 	for _, ip := range ips {
 		_, err := http.Get(ip) // Get the website
@@ -134,7 +134,7 @@ func TestDel(t *testing.T) {
 func TestValidUsers(t *testing.T) {
 	CFG := config.Config()
 	// Check all users have a valid account
-	db, err := raven.OpenSession(CFG.Ravenhost, CFG.Ravenport, "users") // Open database session
+	db, err := mongo.OpenSession(CFG.Server, CFG.Port, CFG.Collection) // Open database session
 	if err != nil {
 		t.Errorf("Unable to open database session: %s", err)
 	}
@@ -149,7 +149,7 @@ func TestValidUsers(t *testing.T) {
 		if usr.Bal < 0 { // Check if balance is negative
 			t.Errorf("User %s has negative balance", usr.UID)
 
-			for _, ticker := range raven.Tickers {
+			for _, ticker := range mongo.Tickers {
 				if usr.Stocks[ticker] < 0 { // Check if stocks is negative
 					t.Errorf("User %s has negative stock count", usr.UID)
 				}

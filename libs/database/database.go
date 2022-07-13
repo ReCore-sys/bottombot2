@@ -1,23 +1,25 @@
-package raven
+package mongo
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"reflect"
-	"strconv"
+	"time"
 
+	"github.com/ReCore-sys/bottombot2/libs/config"
 	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"github.com/lus/dgc"
-	ravendb "github.com/ravendb/ravendb-go-client"
+	"go.mongodb.org/mongo-driver/bson"
+	mongodb "go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Database is a struct that contains the database information
 type Database struct {
-	Host         string                   // The IP address of the database
-	Port         int                      // The port of the database
-	DatabaseName string                   // The name of the database
-	Dstore       *ravendb.DocumentStore   // The document store
-	Session      *ravendb.DocumentSession // The session
+	Host       string          // The IP address of the database
+	Port       int             // The port of the database
+	Collection string          // The name of the database
+	Client     *mongodb.Client // The client of the database
 }
 
 // User is a struct that contains the user information
@@ -43,132 +45,100 @@ type Item struct {
 	Image       string                                                                   `json:"Image"` // Image is the path to the item's image
 }
 
+var CFG = config.Config()
 var Tickers = []string{"ANR", "GST", "ANL", "BKDR"}
 
-func getDocumentStore(url string, port int, databaseName string) (*ravendb.DocumentStore, error) {
-	serverNodes := []string{url + ":" + strconv.Itoa(port)}
-	store := ravendb.NewDocumentStore(serverNodes, databaseName)
-	if err := store.Initialize(); err != nil {
-		return nil, err
-	}
-	return store, nil
+func IsUp() bool {
+	_, conn := OpenSession(CFG.Server, CFG.Port, CFG.Database)
+	return conn != nil
 }
 
 // OpenSession opens a session
-func OpenSession(url string, port int, databaseName string) (Database, error) {
-	store, err := getDocumentStore(url, port, databaseName)
+func OpenSession(url string, port int, collectionName string) (Database, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	options := options.ClientOptions{}
+	options.ApplyURI(fmt.Sprintf("mongodb://%s:%d", url, port))
+	client, err := mongodb.Connect(ctx, &options)
 	if err != nil {
-		return Database{}, fmt.Errorf("getDocumentStore() failed with %s", err)
-	}
-
-	session, err := store.OpenSession("Users")
-	if err != nil {
-		return Database{}, fmt.Errorf("store.OpenSession() failed with %s", err)
+		return Database{}, err
 	}
 	return Database{
-		Host:         url,
-		Port:         port,
-		DatabaseName: databaseName,
-		Dstore:       store,
-		Session:      session,
-	}, nil
+		Host:       url,
+		Port:       port,
+		Collection: collectionName,
+		Client:     client,
+	}, client.Ping(ctx, nil)
 }
 
 // Get gets a user
 func (db *Database) Get(uid string) (User, error) {
-	var user *User
-	tp := reflect.TypeOf(&User{})
-	q := db.Session.QueryCollectionForType(tp)
-	q = q.WhereEquals("UID", uid)
-	err := q.First(&user)
+	collection := db.Client.Database(CFG.Database).Collection(db.Collection)
+	var user User
+	err := collection.FindOne(context.TODO(), bson.M{"UID": uid}).Decode(&user)
 	if err != nil {
 		return User{}, err
 	}
-	dupe := *user
-	return dupe, nil
-
+	return user, nil
 }
 
 // Set sets a user
 func (db *Database) Set(user User) error {
-	if !db.DoesExist(user.UID) {
-		// User doesn't exist, create it
-		err := db.Session.Store(&user)
-		if err != nil {
-			return err
-		}
-		err = db.Session.SaveChanges()
+	if db.DoesExist(user.UID) {
+		return errors.New("User already exists")
+	}
+	collection := db.Client.Database(CFG.Database).Collection(db.Collection)
+	_, err := collection.InsertOne(context.TODO(), user)
+	if err != nil {
 		return err
 	}
-	return errors.New("User already exists")
+	return nil
 
 }
 
 // Update updates a user
 func (db *Database) Update(user User) error {
-	if db.DoesExist(user.UID) {
-		// get the document ID of the usr
-		var usr *User
-		tp := reflect.TypeOf(&User{})
-		q := db.Session.QueryCollectionForType(tp)
-		q = q.WhereEquals("UID", user.UID)
-		err := q.First(&usr)
-		if err != nil {
-			return err
-		}
-		usr.Bal = user.Bal
-		usr.Rank = user.Rank
-		usr.Stocks = user.Stocks
-		usr.Username = user.Username
-		usr.PFP = user.PFP
-		err = db.Session.Store(usr)
-		if err != nil {
-			return err
-		}
-		err = db.Session.SaveChanges()
-		if err != nil {
-			return err
-		}
-		return nil
-
+	collection := db.Client.Database(CFG.Database).Collection(db.Collection)
+	_, err := collection.UpdateOne(context.TODO(), bson.M{"UID": user.UID}, user)
+	if err != nil {
+		return err
 	}
-
-	return errors.New("User doesn't exist")
+	return nil
 }
 
 // DoesExist checks if a user exists
 func (db *Database) DoesExist(uid string) bool {
-	var user *User
-	tp := reflect.TypeOf(&User{})
-	q := db.Session.QueryCollectionForType(tp)
-	q = q.WhereEquals("UID", uid)
-	err := q.First(&user)
-	if err != nil {
-		return false
-	}
-	if user == nil {
-		return false
-	}
-	return true
+	collection := db.Client.Database(CFG.Database).Collection(db.Collection)
+	var user User
+	err := collection.FindOne(context.TODO(), bson.M{"UID": uid}).Decode(&user)
+	return err == nil
 }
 
 // GetAll does what it says on the tin
 func (db *Database) GetAll() []User {
-	var users []*User
-	tp := reflect.TypeOf(&User{})
-	q := db.Session.QueryCollectionForType(tp)
-	err := q.GetResults(&users)
+	collection := db.Client.Database(CFG.Database).Collection(db.Collection)
+	var users []User
+	cur, err := collection.Find(context.TODO(), bson.M{})
 	if err != nil {
-		logging.Log(fmt.Errorf("store.OpenSession() failed with %s", err))
+		logging.Log(err)
+		return nil
 	}
-	var dupe []User
-	for _, user := range users {
-		dupe = append(dupe, *user)
+	for cur.Next(context.TODO()) {
+		var user User
+		err := cur.Decode(&user)
+		if err != nil {
+			logging.Log(err)
+			return nil
+		}
+		users = append(users, user)
 	}
-	return dupe
+	return users
 }
 
 // Close closes the session
 func (db *Database) Close() {
-	db.Session.Close()
+	err := db.Client.Disconnect(context.TODO())
+	if err != nil {
+		logging.Log(err)
+	}
 }

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	raven "github.com/ReCore-sys/bottombot2/libs/database"
+	mongo "github.com/ReCore-sys/bottombot2/libs/database"
 	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"github.com/bwmarrin/discordgo"
 	"github.com/lus/dgc"
@@ -19,7 +19,7 @@ func StoreRoute(route *dgc.Router) *dgc.Router {
 		Usage:       "store",
 		Handler: func(ctx *dgc.Ctx) {
 			fields := []*discordgo.MessageEmbedField{}
-			for _, item := range raven.AllItems {
+			for _, item := range mongo.AllItems {
 				if len(item.Description) > 1 {
 					fields = append(fields, &discordgo.MessageEmbedField{
 						Name:   item.Name + fmt.Sprintf(" ($%v)", item.Price),

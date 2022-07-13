@@ -3,14 +3,12 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 
 	cmd "github.com/ReCore-sys/bottombot2/commands"
 	"github.com/ReCore-sys/bottombot2/libs/config"
-	raven "github.com/ReCore-sys/bottombot2/libs/database"
+	mongo "github.com/ReCore-sys/bottombot2/libs/database"
 	"github.com/ReCore-sys/bottombot2/libs/image"
 	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"github.com/ReCore-sys/bottombot2/libs/stocks"
@@ -36,13 +34,12 @@ func main() {
 	Router = cmd.Registercommands(Router) // Register all commands in the commands.go file.
 
 	Router.Initialize(discord) // Initialize the router with the discord session.
-	_, err = http.Get(CFG.Ravenhost + ":" + strconv.Itoa(CFG.Ravenport))
-	if err != nil {
+	if !mongo.IsUp() {
 		print("\n")
 		log.Fatal("\nCan't connect to DB.\nDid you actually start it?")
 	}
 	go stocks.PriceLoop(discord)
-	for _, ticker := range raven.Tickers {
+	for _, ticker := range mongo.Tickers {
 		stocks.UpdatePrice(ticker, stocks.GeneratePrice(ticker))
 
 	}

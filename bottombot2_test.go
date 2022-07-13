@@ -219,7 +219,7 @@ func TestNumformatting(t *testing.T) {
 }
 
 func TestGraph(t *testing.T) {
-	f, err := os.ReadFile("static/prices.json")
+	f, err := os.ReadFile("prices.json")
 	if err != nil {
 		t.Errorf("File read failed: %s", err)
 	}

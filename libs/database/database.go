@@ -50,7 +50,7 @@ var Tickers = []string{"ANR", "GST", "ANL", "BKDR"}
 
 func IsUp() bool {
 	_, conn := OpenSession(CFG.Server, CFG.Port, CFG.Database)
-	return conn != nil
+	return conn == nil
 }
 
 // OpenSession opens a session

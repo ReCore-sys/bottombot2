@@ -178,6 +178,11 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 					user, err := db.Get(target)
 					if err != nil {
 						logging.Log(err)
+						err = ctx.RespondText("An error occurred while trying to retrieve your account!")
+						if err != nil {
+							logging.Log(err)
+						}
+						return
 					}
 					user.PFP = "https://cdn.discordapp.com/avatars/" + ctx.Event.Author.ID + "/" + ctx.Event.Message.Author.Avatar + ".png"
 					err = db.Update(user)

@@ -75,7 +75,7 @@ func OpenSession(url string, port int, collectionName string) (Database, error) 
 func (db *Database) Get(uid string) (User, error) {
 	collection := db.Client.Database(CFG.Database).Collection(db.Collection)
 	var user User
-	err := collection.FindOne(context.TODO(), bson.M{"UID": uid}).Decode(&user)
+	err := collection.FindOne(context.TODO(), bson.M{"uid": uid}).Decode(&user)
 	if err != nil {
 		return User{}, err
 	}
@@ -99,7 +99,9 @@ func (db *Database) Set(user User) error {
 // Update updates a user
 func (db *Database) Update(user User) error {
 	collection := db.Client.Database(CFG.Database).Collection(db.Collection)
-	_, err := collection.UpdateOne(context.TODO(), bson.M{"UID": user.UID}, user)
+	filter := bson.D{{Key: "uid", Value: user.UID}}
+	update := bson.D{{Key: "$set", Value: user}}
+	_, err := collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		return err
 	}
@@ -109,9 +111,12 @@ func (db *Database) Update(user User) error {
 // DoesExist checks if a user exists
 func (db *Database) DoesExist(uid string) bool {
 	collection := db.Client.Database(CFG.Database).Collection(db.Collection)
-	var user User
-	err := collection.FindOne(context.TODO(), bson.M{"UID": uid}).Decode(&user)
-	return err == nil
+	count, err := collection.CountDocuments(context.TODO(), bson.M{"uid": uid})
+	if err != nil {
+		logging.Log(err)
+		return false
+	}
+	return count > 0
 }
 
 // GetAll does what it says on the tin
@@ -137,8 +142,8 @@ func (db *Database) GetAll() []User {
 
 // Close closes the session
 func (db *Database) Close() {
-	err := db.Client.Disconnect(context.TODO())
+	/*err := db.Client.Disconnect(context.TODO())
 	if err != nil {
 		logging.Log(err)
-	}
+	}*/
 }

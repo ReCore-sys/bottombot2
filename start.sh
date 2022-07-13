@@ -1,4 +1,3 @@
 git pull -f
-go build
-CURRDIR = .
-./$CURRDIR
+go build -o BottomBot
+./BottomBot

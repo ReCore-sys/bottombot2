@@ -77,8 +77,8 @@ func decrypt(data []byte, passphrase string) []byte {
 
 func TestDB(t *testing.T) {
 	CFG := config.Config()
-	_, err := mongo.OpenSession(CFG.Server, CFG.Port, CFG.Collection) // Open database session
-	if err != nil {                                                   // Check if session is opened
+	_, err := mongo.OpenSession(CFG.Server, CFG.DBPort, CFG.Collection) // Open database session
+	if err != nil {                                                     // Check if session is opened
 		t.Errorf("Unable to open database session: %s", err)
 		return
 
@@ -91,7 +91,7 @@ func TestConnection(t *testing.T) {
 	ips := []string{
 		"https://www.google.com/",
 		"https://gateway.discord.gg/",
-		"http://" + CFG.Server + ":" + strconv.Itoa(CFG.Port),
+		"http://" + CFG.Server + ":" + strconv.Itoa(CFG.DBPort),
 	}
 	for _, ip := range ips {
 		_, err := http.Get(ip) // Get the website
@@ -134,7 +134,7 @@ func TestDel(t *testing.T) {
 func TestValidUsers(t *testing.T) {
 	CFG := config.Config()
 	// Check all users have a valid account
-	db, err := mongo.OpenSession(CFG.Server, CFG.Port, CFG.Collection) // Open database session
+	db, err := mongo.OpenSession(CFG.Server, CFG.DBPort, CFG.Collection) // Open database session
 	if err != nil {
 		t.Errorf("Unable to open database session: %s", err)
 	}

@@ -87,7 +87,7 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 		Usage:       "account",
 		Aliases:     []string{"acc", "bal", "balance", "me"},
 		Handler: func(ctx *dgc.Ctx) {
-			db, err := mongo.OpenSession(CFG.Server, CFG.Port, CFG.Collection) // Create a RavenDB session
+			db, err := mongo.OpenSession(CFG.Server, CFG.DBPort, CFG.Collection) // Create a RavenDB session
 			if err != nil {
 				logging.Log(err)
 			}
@@ -230,7 +230,7 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 		Aliases:     []string{"bet"},
 		Handler: func(ctx *dgc.Ctx) {
 			if ratecheck(ctx) {
-				db, err := mongo.OpenSession(CFG.Server, CFG.Port, CFG.Collection) // Create a RavenDB session
+				db, err := mongo.OpenSession(CFG.Server, CFG.DBPort, CFG.Collection) // Create a RavenDB session
 				if err != nil {
 					logging.Log(err)
 				}
@@ -326,7 +326,7 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 		Description: "grants a daily bonus",
 		Usage:       "daily",
 		Handler: func(ctx *dgc.Ctx) {
-			db, err := mongo.OpenSession(CFG.Server, CFG.Port, CFG.Collection) // Create a RavenDB session
+			db, err := mongo.OpenSession(CFG.Server, CFG.DBPort, CFG.Collection) // Create a RavenDB session
 			if err != nil {
 				logging.Log(err)
 			}

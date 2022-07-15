@@ -49,7 +49,7 @@ var CFG = config.Config()
 var Tickers = []string{"ANR", "GST", "ANL", "BKDR"}
 
 func IsUp() bool {
-	_, conn := OpenSession(CFG.Server, CFG.Port, CFG.Database)
+	_, conn := OpenSession(CFG.Server, CFG.DBPort, CFG.Database)
 	return conn == nil
 }
 

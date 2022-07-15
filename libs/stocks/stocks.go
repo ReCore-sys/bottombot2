@@ -51,7 +51,7 @@ func RegisterStocks(router *dgc.Router) *dgc.Router {
 		Aliases:     []string{"stock", "stonks"},
 		Handler: func(ctx *dgc.Ctx) {
 			CFG := config.Config()
-			db, err := mongo.OpenSession(CFG.Server, CFG.Port, CFG.Collection) // Create a RavenDB session
+			db, err := mongo.OpenSession(CFG.Server, CFG.DBPort, CFG.Collection) // Create a RavenDB session
 			if err != nil {
 				logging.Log(err)
 			}
@@ -276,6 +276,30 @@ func GeneratePrice(ticker string) float64 {
 	}
 	changeAmount := float64(Prices[ticker]) * changePercent
 	newPrice := float64(Prices[ticker]) + changeAmount
+	var avgprice float64
+	var count int
+	for _, price := range Prices {
+		if price != 0 {
+			avgprice += price
+			count++
+		}
+	}
+	avgprice = avgprice / float64(count)
+
+	distfromavg := math.Abs(float64(Prices[ticker]) - avgprice/float64(count))
+	threshold := avgprice * 0.3
+	if distfromavg > threshold {
+		diff := distfromavg - threshold
+		divisor := 1.0 + diff*0.2
+		diff /= divisor
+		if Prices[ticker] > avgprice {
+
+			newPrice = threshold + diff
+		} else {
+			newPrice = threshold - diff
+		}
+	}
+
 	return newPrice
 }
 

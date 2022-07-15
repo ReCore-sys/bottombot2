@@ -104,7 +104,7 @@ func Initialize() {
 
 // Account is a function to create a user banner if needed then return the path to it
 func Account(uid string) string {
-	db, err := mongo.OpenSession(CFG.Server, CFG.Port, CFG.Collection)
+	db, err := mongo.OpenSession(CFG.Server, CFG.DBPort, CFG.Collection)
 	if err != nil {
 		logging.Log(err)
 	}

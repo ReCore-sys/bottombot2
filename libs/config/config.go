@@ -13,9 +13,10 @@ type Configs struct {
 	Token      string `yaml:"Token"`
 	Prefix     string `yaml:"Prefix"`
 	Server     string `yaml:"host"`
-	Port       int    `yaml:"port"`
+	DBPort     int    `yaml:"dbport"`
 	Database   string `yaml:"database"`
 	Collection string `yaml:"collection"`
+	Port       int    `yaml:"siteport"`
 }
 
 // Config Reads the config file and returns a Configs struct

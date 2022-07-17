@@ -53,9 +53,7 @@ func main() {
 	if err != nil {
 		logging.Log(err)
 	}
-	if mongo.IsUp() {
-		go utils.LoopStatus(discord)
-	}
+	go utils.LoopStatus(discord)
 
 	fmt.Println("Bot started!") // Print a message to the console to let the user know the bot is online.
 	if !mongo.IsUp() {

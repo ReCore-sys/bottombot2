@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"time"
@@ -59,6 +60,10 @@ func OpenSession(url string, port int, collectionName string) (Database, error) 
 	defer cancel()
 	options := options.ClientOptions{}
 	options.ApplyURI(fmt.Sprintf("mongodb://%s:%d", url, port))
+	options.SetTLSConfig(&tls.Config{
+		InsecureSkipVerify: true,
+		MinVersion:         tls.VersionTLS12,
+		MaxVersion:         tls.VersionTLS12})
 	client, err := mongodb.Connect(ctx, &options)
 	if err != nil {
 		return Database{}, err

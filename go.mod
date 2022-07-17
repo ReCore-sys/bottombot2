@@ -15,7 +15,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.22.6
 	github.com/wcharczuk/go-chart v2.0.1+incompatible
 	github.com/ztrue/tracerr v0.3.0
-	go.mongodb.org/mongo-driver v1.10.0
+	go.mongodb.org/mongo-driver v1.7.5
 	golang.org/x/image v0.0.0-20220617043117-41969df76e82
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -35,7 +35,6 @@ require (
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/montanaflynn/stats v0.6.6 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.2 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
@@ -52,6 +51,7 @@ require (
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
+	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/jaypipes/pcidb v1.0.0 // indirect

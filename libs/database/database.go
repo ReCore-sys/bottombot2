@@ -56,7 +56,7 @@ func IsUp() bool {
 
 // OpenSession opens a session
 func OpenSession(url string, port int, collectionName string) (Database, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	options := options.ClientOptions{}
 	options.ApplyURI(fmt.Sprintf("mongodb://%s:%d", url, port))

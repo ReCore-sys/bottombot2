@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/ReCore-sys/bottombot2/libs/config"
+	mongo "github.com/ReCore-sys/bottombot2/libs/database"
 	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"github.com/bwmarrin/discordgo"
 	"github.com/lus/dgc"
@@ -23,7 +24,9 @@ func Registercommands(router *dgc.Router) *dgc.Router {
 	// how I did this but the IRS still hasn't caught up with me so I'll be fine.
 	cfg := config.Config()
 	router = MiscRoute(router)
-	router = EcoRoute(router)
+	if mongo.IsUp() {
+		router = EcoRoute(router)
+	}
 	//router = StoreRoute(router)
 	//router = CombatRoute(router)
 

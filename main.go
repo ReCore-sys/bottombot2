@@ -20,8 +20,6 @@ import (
 
 func main() {
 
-	go site.Entry()
-
 	CFG := config.Config()
 	println("Initializing Image Library")
 	image.Initialize()
@@ -39,22 +37,32 @@ func main() {
 
 	Router.Initialize(discord) // Initialize the router with the discord session.
 	if !mongo.IsUp() {
-		print("\n")
-		log.Fatal("\nCan't connect to DB.\nDid you actually start it?")
-	}
-	go stocks.PriceLoop(discord)
-	for _, ticker := range mongo.Tickers {
-		stocks.UpdatePrice(ticker, stocks.GeneratePrice(ticker))
+		log.Println("\nCan't connect to DB.\nDid you actually start it?")
+	} else {
 
+		go site.Entry()
+
+		go stocks.PriceLoop(discord)
+		for _, ticker := range mongo.Tickers {
+			stocks.UpdatePrice(ticker, stocks.GeneratePrice(ticker))
+
+		}
+		stocks.UpdatePricesFile(stocks.Prices)
 	}
-	stocks.UpdatePricesFile(stocks.Prices)
 	err = discord.Open() // Open the connection to Discord.
 	if err != nil {
 		logging.Log(err)
 	}
-	go utils.LoopStatus(discord)
+	if mongo.IsUp() {
+		go utils.LoopStatus(discord)
+	}
 
 	fmt.Println("Bot started!") // Print a message to the console to let the user know the bot is online.
+	if !mongo.IsUp() {
+		// Print the warning in red
+		fmt.Printf("\x1b[31m\n")
+		fmt.Println("Database functionality disabled.")
+	}
 	// Wait here until CTRL-C or other term signal is received.
 	defer discord.Close() // Close the connection to Discord.
 

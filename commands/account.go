@@ -11,8 +11,7 @@ import (
 
 	"math/rand"
 
-	"github.com/ReCore-sys/bottombot2/libs/config"
-	mongo "github.com/ReCore-sys/bottombot2/libs/database"
+	db "github.com/ReCore-sys/bottombot2/libs/database"
 	"github.com/ReCore-sys/bottombot2/libs/image"
 	img "github.com/ReCore-sys/bottombot2/libs/image"
 	"github.com/ReCore-sys/bottombot2/libs/logging"
@@ -79,7 +78,6 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 		println(1)
 		logging.Log(err)
 	}
-	CFG := config.Config()
 
 	router.RegisterCmd(&dgc.Command{
 		Name:        "account",
@@ -87,10 +85,6 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 		Usage:       "account",
 		Aliases:     []string{"acc", "bal", "balance", "me"},
 		Handler: func(ctx *dgc.Ctx) {
-			db, err := mongo.OpenSession(CFG.Server, CFG.DBPort, CFG.Collection) // Create a RavenDB session
-			if err != nil {
-				logging.Log(err)
-			}
 			args := utils.ParseArgs(ctx)
 			var target string
 			if len(args) == 0 {
@@ -147,7 +141,7 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 			} else { // Create a new account
 				if target == ctx.Event.Author.ID {
 
-					usr := mongo.User{
+					usr := db.User{
 						UID:      ctx.Event.Author.ID,       // Set the user's ID
 						Username: ctx.Event.Author.Username, // Set the user's username
 						Bal:      100,
@@ -155,7 +149,7 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 						PFP:      "https://cdn.discordapp.com/avatars/" + ctx.Event.Author.ID + "/" + ctx.Event.Message.Author.Avatar + ".png",
 					}
 					usr.Stocks = make(map[string]int)
-					for _, ticker := range mongo.Tickers {
+					for _, ticker := range db.Tickers {
 						usr.Stocks[ticker] = 0
 					}
 					err = db.Set(usr)
@@ -191,7 +185,6 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 					}
 				}()
 			}
-			db.Close()
 		},
 	})
 	println("Registered command: me")
@@ -230,10 +223,7 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 		Aliases:     []string{"bet"},
 		Handler: func(ctx *dgc.Ctx) {
 			if ratecheck(ctx) {
-				db, err := mongo.OpenSession(CFG.Server, CFG.DBPort, CFG.Collection) // Create a RavenDB session
-				if err != nil {
-					logging.Log(err)
-				}
+
 				GambleResponsesLose := []string{"Damn bro, chill", "LMAO your bank account", "Uhhh you ok there buddy?", "I think you might have a problem", "Maybe you shouldn't gamble that much..."}
 				GambleResponsesWin := []string{"Nice. But you won't win every time...", "Make sure it doesn't get out of hand", "Nice work"}
 				args := utils.ParseArgs(ctx)
@@ -308,7 +298,6 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 				if err != nil {
 					logging.Log(err)
 				}
-				db.Close()
 			} else {
 				err = ctx.RespondText("You're being rate limited!")
 				if err != nil {
@@ -326,10 +315,7 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 		Description: "grants a daily bonus",
 		Usage:       "daily",
 		Handler: func(ctx *dgc.Ctx) {
-			db, err := mongo.OpenSession(CFG.Server, CFG.DBPort, CFG.Collection) // Create a RavenDB session
-			if err != nil {
-				logging.Log(err)
-			}
+
 			if !db.DoesExist(ctx.Event.Author.ID) { // Check if the user already has an account
 				err = ctx.RespondText("You don't have an account!")
 				if err != nil {
@@ -355,7 +341,7 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 						logging.Log(err)
 					}
 					dailys[ctx.Event.Author.ID] = time.Now()
-					db.Close()
+
 				} else {
 					err = ctx.RespondText(fmt.Sprintf("You have already claimed your daily! Try again in %s", durafmt.Parse(time.Until(dailys[ctx.Event.Author.ID].Add(time.Hour*24))).LimitFirstN(2)))
 					if err != nil {
@@ -374,7 +360,6 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 				if err != nil {
 					logging.Log(err)
 				}
-				db.Close()
 
 				dailys[ctx.Event.Author.ID] = time.Now()
 			}

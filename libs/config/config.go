@@ -17,6 +17,7 @@ type Configs struct {
 	Database   string `yaml:"database"`
 	Collection string `yaml:"collection"`
 	Port       int    `yaml:"siteport"`
+	Apipass    string `yaml:"apipass"`
 }
 
 // Config Reads the config file and returns a Configs struct

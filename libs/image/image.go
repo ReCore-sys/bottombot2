@@ -15,7 +15,7 @@ import (
 	"os"
 
 	"github.com/ReCore-sys/bottombot2/libs/config"
-	mongo "github.com/ReCore-sys/bottombot2/libs/database"
+	db "github.com/ReCore-sys/bottombot2/libs/database"
 	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"github.com/fogleman/gg"
 	"github.com/nfnt/resize"
@@ -104,10 +104,6 @@ func Initialize() {
 
 // Account is a function to create a user banner if needed then return the path to it
 func Account(uid string) string {
-	db, err := mongo.OpenSession(CFG.Server, CFG.DBPort, CFG.Collection)
-	if err != nil {
-		logging.Log(err)
-	}
 	dc := gg.NewContext(800, 300)
 	userdetail, err := db.Get(uid)
 	if err != nil {

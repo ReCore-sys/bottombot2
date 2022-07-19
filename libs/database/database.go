@@ -1,18 +1,17 @@
-package mongo
+package db
 
 import (
-	"context"
-	"crypto/tls"
-	"errors"
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"time"
 
 	"github.com/ReCore-sys/bottombot2/libs/config"
 	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"github.com/lus/dgc"
-	"go.mongodb.org/mongo-driver/bson"
 	mongodb "go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Database is a struct that contains the database information
@@ -50,37 +49,30 @@ var CFG = config.Config()
 var Tickers = []string{"ANR", "GST", "ANL", "BKDR"}
 
 func IsUp() bool {
-	_, conn := OpenSession(CFG.Server, CFG.DBPort, CFG.Database)
-	return conn == nil
-}
-
-// OpenSession opens a session
-func OpenSession(url string, port int, collectionName string) (Database, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	options := options.ClientOptions{}
-	options.ApplyURI(fmt.Sprintf("mongodb://%s:%d", url, port))
-	options.SetTLSConfig(&tls.Config{
-		InsecureSkipVerify: true,
-		MinVersion:         tls.VersionTLS12,
-		MaxVersion:         tls.VersionTLS12})
-	client, err := mongodb.Connect(ctx, &options)
-	if err != nil {
-		return Database{}, err
+	CFG := config.Config()
+	client := http.Client{
+		Timeout: time.Second * 1,
 	}
-	return Database{
-		Host:       url,
-		Port:       port,
-		Collection: collectionName,
-		Client:     client,
-	}, client.Ping(ctx, nil)
+	_, err := client.Get(fmt.Sprintf("http://%s:%d", CFG.Server, CFG.Port))
+	return err == nil
 }
 
 // Get gets a user
-func (db *Database) Get(uid string) (User, error) {
-	collection := db.Client.Database(CFG.Database).Collection(db.Collection)
+func Get(uid string) (User, error) {
+	client := http.Client{
+		Timeout: time.Second * 1,
+	}
+	resp, err := client.Get(fmt.Sprintf("http://%s:%d/api/v1/user/%s", CFG.Server, CFG.Port, uid))
+	if err != nil {
+		return User{}, err
+	}
+	defer resp.Body.Close()
 	var user User
-	err := collection.FindOne(context.TODO(), bson.M{"uid": uid}).Decode(&user)
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return User{}, err
+	}
+	err = json.Unmarshal(data, &user)
 	if err != nil {
 		return User{}, err
 	}
@@ -88,59 +80,75 @@ func (db *Database) Get(uid string) (User, error) {
 }
 
 // Set sets a user
-func (db *Database) Set(user User) error {
-	if db.DoesExist(user.UID) {
-		return errors.New("User already exists")
+func Set(user User) error {
+	client := http.Client{
+		Timeout: time.Second * 1,
 	}
-	collection := db.Client.Database(CFG.Database).Collection(db.Collection)
-	_, err := collection.InsertOne(context.TODO(), user)
+	json, err := json.Marshal(user)
 	if err != nil {
 		return err
 	}
+	resp, err := client.Post(fmt.Sprintf("http://%s:%d/api/v1/user/%s", CFG.Server, CFG.Port, CFG.Apipass), "application/json", bytes.NewBuffer(json))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
 	return nil
 
 }
 
 // Update updates a user
-func (db *Database) Update(user User) error {
-	collection := db.Client.Database(CFG.Database).Collection(db.Collection)
-	filter := bson.D{{Key: "uid", Value: user.UID}}
-	update := bson.D{{Key: "$set", Value: user}}
-	_, err := collection.UpdateOne(context.TODO(), filter, update)
+func Update(user User) error {
+	client := http.Client{
+		Timeout: time.Second * 1,
+	}
+	json, err := json.Marshal(user)
 	if err != nil {
 		return err
 	}
-	return nil
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("http://%s:%d/api/v1/deleteuser/%s/%s", CFG.Server, CFG.Port, user.UID, CFG.Apipass), bytes.NewBuffer(json))
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+	err = Set(user)
+	return err
 }
 
 // DoesExist checks if a user exists
-func (db *Database) DoesExist(uid string) bool {
-	collection := db.Client.Database(CFG.Database).Collection(db.Collection)
-	count, err := collection.CountDocuments(context.TODO(), bson.M{"uid": uid})
+func DoesExist(uid string) bool {
+	client := http.Client{
+		Timeout: time.Second * 1,
+	}
+	resp, err := client.Get(fmt.Sprintf("http://%s:%d/api/v1/userexists/%s", CFG.Server, CFG.Port, uid))
 	if err != nil {
-		logging.Log(err)
 		return false
 	}
-	return count > 0
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
+	return string(data) == "true"
 }
 
 // GetAll does what it says on the tin
-func (db *Database) GetAll() []User {
-	collection := db.Client.Database(CFG.Database).Collection(db.Collection)
+func GetAll() []User {
 	var users []User
-	cur, err := collection.Find(context.TODO(), bson.M{})
+	client := http.Client{
+		Timeout: time.Second * 1,
+	}
+	resp, err := client.Get(fmt.Sprintf("http://%s:%d/api/v1/users", CFG.Server, CFG.Port))
 	if err != nil {
 		logging.Log(err)
-		return nil
+		return users
 	}
-	for cur.Next(context.TODO()) {
-		var user User
-		err := cur.Decode(&user)
-		if err != nil {
-			logging.Log(err)
-			return nil
-		}
-		users = append(users, user)
+	defer resp.Body.Close()
+	err = json.NewDecoder(resp.Body).Decode(&users)
+	if err != nil {
+		logging.Log(err)
+		return users
 	}
 	return users
 }

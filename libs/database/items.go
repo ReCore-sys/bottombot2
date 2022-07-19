@@ -1,4 +1,4 @@
-package mongo
+package db
 
 import (
 	"fmt"
@@ -40,15 +40,11 @@ var AllItems = []Item{
 					logging.Log(err)
 				}
 			}
-			db, err := OpenSession("localhost", 8080, "users")
+			err := Set(attacker)
 			if err != nil {
 				logging.Log(err)
 			}
-			err = db.Set(attacker)
-			if err != nil {
-				logging.Log(err)
-			}
-			err = db.Set(defender)
+			err = Set(defender)
 			if err != nil {
 				logging.Log(err)
 			}

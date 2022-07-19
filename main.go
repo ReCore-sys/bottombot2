@@ -13,7 +13,6 @@ import (
 	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"github.com/ReCore-sys/bottombot2/libs/stocks"
 	"github.com/ReCore-sys/bottombot2/libs/utils"
-	"github.com/ReCore-sys/bottombot2/site"
 	"github.com/bwmarrin/discordgo"
 	"github.com/lus/dgc"
 )
@@ -39,8 +38,6 @@ func main() {
 	if !mongo.IsUp() {
 		log.Println("\nCan't connect to DB.\nDid you actually start it?")
 	} else {
-
-		go site.Entry()
 
 		go stocks.PriceLoop(discord)
 		for _, ticker := range mongo.Tickers {

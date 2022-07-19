@@ -81,7 +81,7 @@ func CombatRoute(router *dgc.Router) *dgc.Router {
 						logging.Log(err)
 					}
 					ctx.RespondText("You equip the \"" + item.Name + "\"")
-					db.Close()
+					
 				} else {
 					ctx.RespondText("You don't have that item")
 				}
@@ -106,7 +106,7 @@ func CombatRoute(router *dgc.Router) *dgc.Router {
 			if err != nil {
 				logging.Log(err)
 			}
-			defer db.Close()
+			defer 
 			if len(args) == 0 {
 
 				equipweapon := user.Combat.ActiveWeapon
@@ -231,7 +231,7 @@ func CombatRoute(router *dgc.Router) *dgc.Router {
 							}
 							user.Bal += mon.Money
 							db.Update(user)
-							db.Close()
+							
 							itemtoprob := make(map[raven.Item]float64)
 							for index, item := range mon.Loot {
 								itemtoprob[item] = mon.LootChances[index]
@@ -252,7 +252,7 @@ func CombatRoute(router *dgc.Router) *dgc.Router {
 									}
 									user.Combat.Inv = append(user.Combat.Inv, item)
 									db.Update(user)
-									db.Close()
+									
 									ctx.RespondText("You found a \"" + item.Name + "\"!")
 								}
 							}
@@ -295,7 +295,7 @@ func CombatRoute(router *dgc.Router) *dgc.Router {
 			equip := "**Equipped: " + user.Combat.ActiveWeapon.Name + "**\n" + strings.Repeat("-", 10) + "\n"
 			equip += "**Inventory:**\n"
 			ctx.RespondText(equip + generalinv)
-			db.Close()
+			
 		},
 	})
 	println("Registered command: inv")
@@ -399,7 +399,7 @@ func DMGuser(ctx *dgc.Ctx, amount float64) bool {
 	if err != nil {
 		logging.Log(err)
 	}
-	db.Close()
+	
 	return true
 }
 

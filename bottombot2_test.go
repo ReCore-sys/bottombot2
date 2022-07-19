@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/ReCore-sys/bottombot2/libs/config"
+	db "github.com/ReCore-sys/bottombot2/libs/database"
 	mongo "github.com/ReCore-sys/bottombot2/libs/database"
 	"github.com/ReCore-sys/bottombot2/libs/stocks"
 	"github.com/ReCore-sys/bottombot2/libs/utils"
@@ -75,16 +76,6 @@ func decrypt(data []byte, passphrase string) []byte {
 	return plaintext
 }
 
-func TestDB(t *testing.T) {
-	CFG := config.Config()
-	_, err := mongo.OpenSession(CFG.Server, CFG.DBPort, CFG.Collection) // Open database session
-	if err != nil {                                                     // Check if session is opened
-		t.Errorf("Unable to open database session: %s", err)
-		return
-
-	}
-}
-
 func TestConnection(t *testing.T) {
 	// Check connection to Discord bot gateway, google and my RavenDB server
 	CFG := config.Config()
@@ -132,12 +123,6 @@ func TestDel(t *testing.T) {
 }
 
 func TestValidUsers(t *testing.T) {
-	CFG := config.Config()
-	// Check all users have a valid account
-	db, err := mongo.OpenSession(CFG.Server, CFG.DBPort, CFG.Collection) // Open database session
-	if err != nil {
-		t.Errorf("Unable to open database session: %s", err)
-	}
 	allusrs := db.GetAll() // Get an array of all users
 	for _, usr := range allusrs {
 		if usr.Username == "" { // Check if username is empty

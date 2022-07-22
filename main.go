@@ -57,6 +57,8 @@ func main() {
 		// Print the warning in red
 		fmt.Printf("\x1b[31m\n")
 		fmt.Println("Database functionality disabled.")
+
+		fmt.Printf("\x1b[0m\n")
 	}
 	// Wait here until CTRL-C or other term signal is received.
 	defer discord.Close() // Close the connection to Discord.

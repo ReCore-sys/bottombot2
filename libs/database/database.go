@@ -88,7 +88,12 @@ func Set(user User) error {
 	if err != nil {
 		return err
 	}
-	resp, err := client.Post(fmt.Sprintf("http://%s:%d/api/v1/user/%s", CFG.Server, CFG.Port, CFG.Apipass), "application/json", bytes.NewBuffer(json))
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/api/v1/user", CFG.Server, CFG.Port), bytes.NewBuffer(json))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Auth-Key", CFG.Apipass)
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -106,16 +111,20 @@ func Update(user User) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("http://%s:%d/api/v1/deleteuser/%s/%s", CFG.Server, CFG.Port, user.UID, CFG.Apipass), bytes.NewBuffer(json))
+	req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("http://%s:%d/api/v1/user", CFG.Server, CFG.Port), bytes.NewBuffer(json))
 	if err != nil {
 		return err
 	}
+	req.Header.Set("Auth-Key", CFG.Apipass)
+	req.Header.Set("Content-type", "application/json")
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
-	resp.Body.Close()
-	err = Set(user)
+	defer resp.Body.Close()
+	code := resp.StatusCode
+	_ = code
 	return err
 }
 
@@ -124,12 +133,15 @@ func DoesExist(uid string) bool {
 	client := http.Client{
 		Timeout: time.Second * 1,
 	}
-	resp, err := client.Get(fmt.Sprintf("http://%s:%d/api/v1/userexists/%s", CFG.Server, CFG.Port, uid))
+	resp, err := client.Get(fmt.Sprintf("http://%s:%d/api/v1/exist/%s", CFG.Server, CFG.Port, uid))
 	if err != nil {
 		return false
 	}
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return false
+	}
 	return string(data) == "true"
 }
 

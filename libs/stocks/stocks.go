@@ -13,7 +13,8 @@ import (
 	"strings"
 	"time"
 
-	db "github.com/ReCore-sys/bottombot2/libs/database"
+	"github.com/ReCore-sys/bottombot2/libs/config"
+	mongo "github.com/ReCore-sys/bottombot2/libs/database"
 	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"github.com/ReCore-sys/bottombot2/libs/utils"
 	"github.com/bwmarrin/discordgo"
@@ -49,7 +50,13 @@ func RegisterStocks(router *dgc.Router) *dgc.Router {
 		Usage:       "stocks <buy/sell> <ticker> <amount>",
 		Aliases:     []string{"stock", "stonks"},
 		Handler: func(ctx *dgc.Ctx) {
+			CFG := config.Config()
+			db, err := mongo.OpenSession(CFG.Server, CFG.DBPort, CFG.Collection) // Create a RavenDB session
+			if err != nil {
+				logging.Log(err)
+			}
 
+			defer db.Close()
 			var ticker string
 			args := utils.ParseArgs(ctx)
 			//users := db.GetAll()
@@ -58,7 +65,7 @@ func RegisterStocks(router *dgc.Router) *dgc.Router {
 				 *               Stock price
 				 *=============================================**/
 				response := "**Current stock prices:**\n\n"
-				sortedtickers := db.Tickers
+				sortedtickers := mongo.Tickers
 				sort.Strings(sortedtickers)
 				for _, ticker := range sortedtickers {
 					response += fmt.Sprintf("%s: $%.2f\n", ticker, Prices[ticker])
@@ -100,7 +107,7 @@ func RegisterStocks(router *dgc.Router) *dgc.Router {
 						logging.Log(err)
 					}
 					return
-				} else if !utils.IsIn(ticker, db.Tickers) {
+				} else if !utils.IsIn(ticker, mongo.Tickers) {
 					err = ctx.RespondText("That ticker is not valid.")
 					if err != nil {
 						logging.Log(err)
@@ -155,7 +162,7 @@ func RegisterStocks(router *dgc.Router) *dgc.Router {
 					if err != nil {
 						logging.Log(err)
 					}
-
+					db.Close()
 				case "sell":
 					user, err := db.Get(ctx.Event.Author.ID)
 					if err != nil {
@@ -234,7 +241,7 @@ func PriceLoop(discord *discordgo.Session) {
 		if utils.IntervalCheck(20 * 1000 * 60) {
 
 			UntilChange = time.Now().Add(20 * time.Minute)
-			for _, ticker := range db.Tickers {
+			for _, ticker := range mongo.Tickers {
 				Prices[ticker] = math.Round(GeneratePrice(ticker)*100) / 100
 			}
 			UpdatePricesFile(Prices)
@@ -269,30 +276,6 @@ func GeneratePrice(ticker string) float64 {
 	}
 	changeAmount := float64(Prices[ticker]) * changePercent
 	newPrice := float64(Prices[ticker]) + changeAmount
-	var avgprice float64
-	var count int
-	for _, price := range Prices {
-		if price != 0 {
-			avgprice += price
-			count++
-		}
-	}
-	avgprice = avgprice / float64(count)
-
-	distfromavg := math.Abs(float64(Prices[ticker]) - avgprice/float64(count))
-	threshold := avgprice * 0.3
-	if distfromavg > threshold {
-		diff := distfromavg - threshold
-		divisor := 1.0 + diff*0.2
-		diff /= divisor
-		if Prices[ticker] > avgprice {
-
-			newPrice = threshold + diff
-		} else {
-			newPrice = threshold - diff
-		}
-	}
-
 	return newPrice
 }
 

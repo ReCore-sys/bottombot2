@@ -53,7 +53,7 @@ func IsUp() bool {
 	client := http.Client{
 		Timeout: time.Second * 1,
 	}
-	_, err := client.Get(fmt.Sprintf("http://%s:%d", CFG.Server, CFG.Port))
+	_, err := client.Get(fmt.Sprintf("https://%s:%d", CFG.Server, CFG.Port))
 	return err == nil
 }
 
@@ -62,7 +62,7 @@ func Get(uid string) (User, error) {
 	client := http.Client{
 		Timeout: time.Second * 1,
 	}
-	resp, err := client.Get(fmt.Sprintf("http://%s:%d/api/v1/user/%s", CFG.Server, CFG.Port, uid))
+	resp, err := client.Get(fmt.Sprintf("https://%s:%d/api/v1/user/%s", CFG.Server, CFG.Port, uid))
 	if err != nil {
 		return User{}, err
 	}
@@ -88,7 +88,7 @@ func Set(user User) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/api/v1/user", CFG.Server, CFG.Port), bytes.NewBuffer(json))
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://%s:%d/api/v1/user", CFG.Server, CFG.Port), bytes.NewBuffer(json))
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func Update(user User) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("http://%s:%d/api/v1/user", CFG.Server, CFG.Port), bytes.NewBuffer(json))
+	req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("https://%s:%d/api/v1/user", CFG.Server, CFG.Port), bytes.NewBuffer(json))
 	if err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func DoesExist(uid string) bool {
 	client := http.Client{
 		Timeout: time.Second * 1,
 	}
-	resp, err := client.Get(fmt.Sprintf("http://%s:%d/api/v1/exist/%s", CFG.Server, CFG.Port, uid))
+	resp, err := client.Get(fmt.Sprintf("https://%s:%d/api/v1/exist/%s", CFG.Server, CFG.Port, uid))
 	if err != nil {
 		return false
 	}
@@ -151,7 +151,7 @@ func GetAll() []User {
 	client := http.Client{
 		Timeout: time.Second * 1,
 	}
-	resp, err := client.Get(fmt.Sprintf("http://%s:%d/api/v1/users", CFG.Server, CFG.Port))
+	resp, err := client.Get(fmt.Sprintf("https://%s:%d/api/v1/users", CFG.Server, CFG.Port))
 	if err != nil {
 		logging.Log(err)
 		return users

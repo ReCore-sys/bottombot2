@@ -53,7 +53,10 @@ func IsUp() bool {
 	client := http.Client{
 		Timeout: time.Second * 1,
 	}
-	_, err := client.Get(fmt.Sprintf("https://%s:%d", CFG.Server, CFG.Port))
+	_, err := client.Get(fmt.Sprintf("https://%s:%d/api/v1/ping", CFG.Server, CFG.Port))
+	if err != nil {
+		println(err.Error())
+	}
 	return err == nil
 }
 

@@ -2,6 +2,7 @@ package db
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -52,6 +53,11 @@ func IsUp() bool {
 	CFG := config.Config()
 	client := http.Client{
 		Timeout: time.Second * 1,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
 	}
 	_, err := client.Get(fmt.Sprintf("https://%s:%d/api/v1/ping", CFG.Server, CFG.Port))
 	if err != nil {
@@ -64,6 +70,11 @@ func IsUp() bool {
 func Get(uid string) (User, error) {
 	client := http.Client{
 		Timeout: time.Second * 1,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
 	}
 	resp, err := client.Get(fmt.Sprintf("https://%s:%d/api/v1/user/%s", CFG.Server, CFG.Port, uid))
 	if err != nil {
@@ -86,6 +97,11 @@ func Get(uid string) (User, error) {
 func Set(user User) error {
 	client := http.Client{
 		Timeout: time.Second * 1,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
 	}
 	json, err := json.Marshal(user)
 	if err != nil {
@@ -109,6 +125,11 @@ func Set(user User) error {
 func Update(user User) error {
 	client := http.Client{
 		Timeout: time.Second * 1,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
 	}
 	json, err := json.Marshal(user)
 	if err != nil {
@@ -135,6 +156,11 @@ func Update(user User) error {
 func DoesExist(uid string) bool {
 	client := http.Client{
 		Timeout: time.Second * 1,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
 	}
 	resp, err := client.Get(fmt.Sprintf("https://%s:%d/api/v1/exist/%s", CFG.Server, CFG.Port, uid))
 	if err != nil {
@@ -153,6 +179,11 @@ func GetAll() []User {
 	var users []User
 	client := http.Client{
 		Timeout: time.Second * 1,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
 	}
 	resp, err := client.Get(fmt.Sprintf("https://%s:%d/api/v1/users", CFG.Server, CFG.Port))
 	if err != nil {

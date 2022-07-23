@@ -5,4 +5,4 @@ images/users/*
 static/config.yaml
 pytesting
 *.exe
-prices.json
+*/**/prices.json

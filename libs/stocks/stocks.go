@@ -271,12 +271,12 @@ func GeneratePrice(ticker string) float64 {
 }
 
 func UpdatePricesFile(prices map[string]float64) {
-	f, err := os.OpenFile("prices.json", os.O_RDWR|os.O_CREATE, 0666)
+	f, err := os.OpenFile("./static/prices.json", os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		logging.Log(err)
 	}
 	var arrayofprices []map[string]float64
-	data, err := os.ReadFile("prices.json")
+	data, err := os.ReadFile("./static/prices.json")
 	if err != nil {
 		logging.Log(err)
 	}

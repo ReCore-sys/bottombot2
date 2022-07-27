@@ -163,6 +163,7 @@ func GetAll() []User {
 func SendStocks(stocks map[string]float64) {
 	client := Client()
 	stocks["change"] = float64(ChangeTime.Unix())
+	fmt.Printf("%+v\n", stocks)
 	json, err := json.Marshal(stocks)
 	if err != nil {
 		logging.Log(err)

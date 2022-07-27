@@ -17,7 +17,7 @@ func Log(err error) {
 		panic(err)
 	}
 	defer f.Close()
-	_, err = f.WriteString(wrap.Error() + "\n")
+	_, err = f.WriteString(tracerr.SprintSourceColor(wrap) + "\n")
 	if err != nil {
 		panic(err)
 	}

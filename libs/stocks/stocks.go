@@ -236,6 +236,7 @@ func PriceLoop(discord *discordgo.Session) {
 				Prices[ticker] = math.Round(GeneratePrice(ticker)*100) / 100
 			}
 			UpdatePricesFile(Prices)
+			db.SendStocks(Prices)
 
 		}
 
@@ -251,6 +252,7 @@ func UpdatePrice(ticker string, price float64) {
 
 	println(fmt.Sprintf("Price updated to: $%.2f", price))
 	Prices[ticker] = price
+	db.ChangeTime = time.Now()
 }
 
 func GeneratePrice(ticker string) float64 {

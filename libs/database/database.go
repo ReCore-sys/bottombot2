@@ -48,6 +48,7 @@ type Item struct {
 
 var CFG = config.Config()
 var Tickers = []string{"ANR", "GST", "ANL", "BKDR"}
+var ChangeTime time.Time
 
 func IsUp() bool {
 	CFG := config.Config()
@@ -197,6 +198,36 @@ func GetAll() []User {
 		return users
 	}
 	return users
+}
+
+func SendStocks(stocks map[string]float64) {
+	client := http.Client{
+		Timeout: time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+	stocks["change"] = float64(ChangeTime.Unix())
+	json, err := json.Marshal(stocks)
+	if err != nil {
+		logging.Log(err)
+		return
+	}
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://%s:%d/api/v1/stocks", CFG.Server, CFG.Port), bytes.NewBuffer(json))
+	if err != nil {
+		logging.Log(err)
+		return
+	}
+	req.Header.Set("Auth-Key", CFG.Apipass)
+	req.Header.Set("Content-type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		logging.Log(err)
+		return
+	}
+	defer resp.Body.Close()
 }
 
 // Close closes the session

@@ -13,29 +13,19 @@ require (
 	github.com/shirou/gopsutil/v3 v3.22.6
 	github.com/wcharczuk/go-chart v2.0.1+incompatible
 	github.com/ztrue/tracerr v0.3.0
-	go.mongodb.org/mongo-driver v1.7.5
 	golang.org/x/image v0.0.0-20220617043117-41969df76e82
 	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
 	github.com/blend/go-sdk v1.20220411.3 // indirect
-	github.com/golang/snappy v0.0.4 // indirect
-	github.com/klauspost/compress v1.15.8 // indirect
 	github.com/logrusorgru/aurora v2.0.3+incompatible // indirect
-	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
-	github.com/xdg-go/scram v1.1.1 // indirect
-	github.com/xdg-go/stringprep v1.0.3 // indirect
-	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
-	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
-	golang.org/x/text v0.3.7 // indirect
 )
 
 require (
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
-	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/jaypipes/pcidb v1.0.0 // indirect

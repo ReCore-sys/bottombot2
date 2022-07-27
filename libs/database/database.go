@@ -12,16 +12,7 @@ import (
 	"github.com/ReCore-sys/bottombot2/libs/config"
 	"github.com/ReCore-sys/bottombot2/libs/logging"
 	"github.com/lus/dgc"
-	mongodb "go.mongodb.org/mongo-driver/mongo"
 )
-
-// Database is a struct that contains the database information
-type Database struct {
-	Host       string          // The IP address of the database
-	Port       int             // The port of the database
-	Collection string          // The name of the database
-	Client     *mongodb.Client // The client of the database
-}
 
 // User is a struct that contains the user information
 type User struct {
@@ -50,9 +41,8 @@ var CFG = config.Config()
 var Tickers = []string{"ANR", "GST", "ANL", "BKDR"}
 var ChangeTime time.Time
 
-func IsUp() bool {
-	CFG := config.Config()
-	client := http.Client{
+func Client() http.Client {
+	return http.Client{
 		Timeout: time.Second * 1,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -60,6 +50,11 @@ func IsUp() bool {
 			},
 		},
 	}
+}
+
+func IsUp() bool {
+	CFG := config.Config()
+	client := Client()
 	_, err := client.Get(fmt.Sprintf("https://%s:%d/api/v1/ping", CFG.Server, CFG.Port))
 	if err != nil {
 		println(err.Error())
@@ -69,14 +64,7 @@ func IsUp() bool {
 
 // Get gets a user
 func Get(uid string) (User, error) {
-	client := http.Client{
-		Timeout: time.Second * 1,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-	}
+	client := Client()
 	resp, err := client.Get(fmt.Sprintf("https://%s:%d/api/v1/user/%s", CFG.Server, CFG.Port, uid))
 	if err != nil {
 		return User{}, err
@@ -96,14 +84,7 @@ func Get(uid string) (User, error) {
 
 // Set sets a user
 func Set(user User) error {
-	client := http.Client{
-		Timeout: time.Second * 1,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-	}
+	client := Client()
 	json, err := json.Marshal(user)
 	if err != nil {
 		return err
@@ -124,14 +105,7 @@ func Set(user User) error {
 
 // Update updates a user
 func Update(user User) error {
-	client := http.Client{
-		Timeout: time.Second * 1,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-	}
+	client := Client()
 	json, err := json.Marshal(user)
 	if err != nil {
 		return err
@@ -155,14 +129,7 @@ func Update(user User) error {
 
 // DoesExist checks if a user exists
 func DoesExist(uid string) bool {
-	client := http.Client{
-		Timeout: time.Second * 1,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-	}
+	client := Client()
 	resp, err := client.Get(fmt.Sprintf("https://%s:%d/api/v1/exist/%s", CFG.Server, CFG.Port, uid))
 	if err != nil {
 		return false
@@ -178,14 +145,7 @@ func DoesExist(uid string) bool {
 // GetAll does what it says on the tin
 func GetAll() []User {
 	var users []User
-	client := http.Client{
-		Timeout: time.Second * 1,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-	}
+	client := Client()
 	resp, err := client.Get(fmt.Sprintf("https://%s:%d/api/v1/users", CFG.Server, CFG.Port))
 	if err != nil {
 		logging.Log(err)
@@ -201,14 +161,7 @@ func GetAll() []User {
 }
 
 func SendStocks(stocks map[string]float64) {
-	client := http.Client{
-		Timeout: time.Second,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-	}
+	client := Client()
 	stocks["change"] = float64(ChangeTime.Unix())
 	json, err := json.Marshal(stocks)
 	if err != nil {
@@ -228,12 +181,4 @@ func SendStocks(stocks map[string]float64) {
 		return
 	}
 	defer resp.Body.Close()
-}
-
-// Close closes the session
-func (db *Database) Close() {
-	/*err := db.Client.Disconnect(context.TODO())
-	if err != nil {
-		logging.Log(err)
-	}*/
 }

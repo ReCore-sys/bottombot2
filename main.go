@@ -8,6 +8,7 @@ import (
 
 	cmd "github.com/ReCore-sys/bottombot2/commands"
 	"github.com/ReCore-sys/bottombot2/libs/config"
+	db "github.com/ReCore-sys/bottombot2/libs/database"
 	mongo "github.com/ReCore-sys/bottombot2/libs/database"
 	"github.com/ReCore-sys/bottombot2/libs/image"
 	"github.com/ReCore-sys/bottombot2/libs/logging"
@@ -45,6 +46,7 @@ func main() {
 
 		}
 		stocks.UpdatePricesFile(stocks.Prices)
+		db.SendStocks(stocks.Prices)
 	}
 	err = discord.Open() // Open the connection to Discord.
 	if err != nil {

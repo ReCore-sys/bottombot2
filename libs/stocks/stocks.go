@@ -2,7 +2,6 @@
 package stocks
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"math/rand"
@@ -154,6 +153,26 @@ func RegisterStocks(router *dgc.Router) *dgc.Router {
 					if err != nil {
 						logging.Log(err)
 					}
+					err = db.Stats{
+						User:   ctx.Event.Author.ID,
+						Type:   "bal",
+						Amount: float64(amntint) * Prices[ticker] * -1,
+						Method: "stocks",
+						Data2:  nil,
+					}.Send()
+					if err != nil {
+						logging.Log(err)
+					}
+					err = db.Stats{
+						User:   ctx.Event.Author.ID,
+						Type:   "stocks",
+						Amount: float64(amntint),
+						Method: "stocks",
+						Data2:  ticker,
+					}.Send()
+					if err != nil {
+						logging.Log(err)
+					}
 				case "sell":
 					user, err := db.Get(ctx.Event.Author.ID)
 					if err != nil {
@@ -199,7 +218,28 @@ func RegisterStocks(router *dgc.Router) *dgc.Router {
 					if err != nil {
 						logging.Log(err)
 					}
+					err = db.Stats{
+						User:   ctx.Event.Author.ID,
+						Type:   "bal",
+						Amount: float64(amntint) * Prices[ticker],
+						Method: "stocks",
+						Data2:  ticker,
+					}.Send()
 
+					if err != nil {
+						logging.Log(err)
+					}
+					err = db.Stats{
+						User:   ctx.Event.Author.ID,
+						Type:   "stocks",
+						Amount: float64(amntint) * -1,
+						Method: "stocks",
+						Data2:  ticker,
+					}.Send()
+
+					if err != nil {
+						logging.Log(err)
+					}
 				}
 
 			} else if args[0] == "amount" {
@@ -235,7 +275,6 @@ func PriceLoop(discord *discordgo.Session) {
 			for _, ticker := range db.Tickers {
 				Prices[ticker] = math.Round(GeneratePrice(ticker)*100) / 100
 			}
-			UpdatePricesFile(Prices)
 			db.SendStocks(Prices)
 
 		}
@@ -270,32 +309,4 @@ func GeneratePrice(ticker string) float64 {
 	changeAmount := float64(Prices[ticker]) * changePercent
 	newPrice := float64(Prices[ticker]) + changeAmount
 	return newPrice
-}
-
-func UpdatePricesFile(prices map[string]float64) {
-	f, err := os.OpenFile("./static/prices.json", os.O_RDWR|os.O_CREATE, 0666)
-	if err != nil {
-		logging.Log(err)
-	}
-	var arrayofprices []map[string]float64
-	data, err := os.ReadFile("./static/prices.json")
-	if err != nil {
-		logging.Log(err)
-	}
-	err = json.Unmarshal(data, &arrayofprices)
-	if err != nil {
-		logging.Log(err)
-	}
-	arrayofprices = append(arrayofprices, prices)
-	if len(arrayofprices) > 360 {
-		arrayofprices = arrayofprices[len(arrayofprices)-360:]
-	}
-	err = json.NewEncoder(f).Encode(arrayofprices)
-	if err != nil {
-		logging.Log(err)
-	}
-	err = f.Close()
-	if err != nil {
-		logging.Log(err)
-	}
 }

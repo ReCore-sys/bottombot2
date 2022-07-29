@@ -286,10 +286,28 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 					if err != nil {
 						logging.Log(err)
 					}
+					err = db.Stats{
+						User:   ctx.Event.Author.ID,
+						Type:   "bal",
+						Amount: amnt,
+						Method: "gamble",
+					}.Send()
+					if err != nil {
+						logging.Log(err)
+					}
 				} else {
 					user.Bal -= amnt
 					err = ctx.RespondText("You lost! You now have $" + utils.FormatPrice(user.Bal) + " (You lost $" + fmt.Sprint(amnt) + ")\n" + utils.RandomChoiceStrings(GambleResponsesLose))
 
+					if err != nil {
+						logging.Log(err)
+					}
+					err = db.Stats{
+						User:   ctx.Event.Author.ID,
+						Type:   "bal",
+						Amount: -amnt,
+						Method: "gamble",
+					}.Send()
 					if err != nil {
 						logging.Log(err)
 					}
@@ -327,12 +345,13 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 			if err != nil {
 				logging.Log(err)
 			}
+			dailyamount := 100.0
 			if _, ok := dailys[ctx.Event.Author.ID]; ok {
 				if dailys[ctx.Event.Author.ID].Unix()+(24*60*60) < time.Now().Unix() {
 
 					dailys[ctx.Event.Author.ID] = time.Now()
-					user.Bal += 100
-					err = ctx.RespondText("You received $" + utils.FormatPrice(100) + " for your daily!")
+					user.Bal += dailyamount
+					err = ctx.RespondText("You received $" + utils.FormatPrice(dailyamount) + " for your daily!")
 					if err != nil {
 						logging.Log(err)
 					}
@@ -351,8 +370,8 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 				}
 			} else {
 				dailys[ctx.Event.Author.ID] = time.Now()
-				user.Bal += 100
-				err = ctx.RespondText("You received $" + utils.FormatPrice(100) + " for your daily!")
+				user.Bal += dailyamount
+				err = ctx.RespondText("You received $" + utils.FormatPrice(dailyamount) + " for your daily!")
 				if err != nil {
 					logging.Log(err)
 				}
@@ -362,6 +381,15 @@ func EcoRoute(router *dgc.Router) *dgc.Router {
 				}
 
 				dailys[ctx.Event.Author.ID] = time.Now()
+				err = db.Stats{
+					User:   ctx.Event.Author.ID,
+					Type:   "bal",
+					Amount: dailyamount,
+					Method: "daily",
+				}.Send()
+				if err != nil {
+					logging.Log(err)
+				}
 			}
 			f, err := os.OpenFile("static/dailys.json", os.O_RDWR|os.O_CREATE, 0644)
 			if err != nil {

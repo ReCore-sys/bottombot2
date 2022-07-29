@@ -45,7 +45,7 @@ func main() {
 			stocks.UpdatePrice(ticker, stocks.GeneratePrice(ticker))
 
 		}
-		stocks.UpdatePricesFile(stocks.Prices)
+		stocks.Prices = db.GetStocks()
 		db.SendStocks(stocks.Prices)
 	}
 	err = discord.Open() // Open the connection to Discord.

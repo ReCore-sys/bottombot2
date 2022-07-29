@@ -37,6 +37,15 @@ type Item struct {
 	Image       string                                                                   `json:"Image"` // Image is the path to the item's image
 }
 
+type Stats struct {
+	User   string  `json:"User"`   // User is the user's ID
+	Type   string  `json:"Type"`   // Type is the type of stat. Example: "bal" or "stk"
+	Amount float64 `json:"Amount"` // Amount is the amount of money/stocks/other data
+	Method string  `json:"Method"` // Method is the method of how the stat was gotten, example: "stocks", "daily", "gamble"
+	Time   int64   `json:"Time"`   // Time is the time the stat was created
+	Data2  any     `json:"Data2"`  // Data2 is arbitrary data that can be used for whatever is needed
+}
+
 var CFG = config.Config()
 var Tickers = []string{"ANR", "GST", "ANL", "BKDR"}
 var ChangeTime time.Time
@@ -160,10 +169,12 @@ func GetAll() []User {
 	return users
 }
 
+// SendStocks() takes a map of strings and floats, converts it to JSON, and sends it to the server
+//
+// @param stocks map[string]float64
 func SendStocks(stocks map[string]float64) {
 	client := Client()
 	stocks["change"] = float64(ChangeTime.Unix())
-	fmt.Printf("%+v\n", stocks)
 	json, err := json.Marshal(stocks)
 	if err != nil {
 		logging.Log(err)
@@ -182,4 +193,57 @@ func SendStocks(stocks map[string]float64) {
 		return
 	}
 	defer resp.Body.Close()
+}
+
+func GetStocks() map[string]float64 {
+	client := Client()
+	resp, err := client.Get(fmt.Sprintf("https://%s:%d/api/v1/stocks", CFG.Server, CFG.Port))
+	if err != nil {
+		logging.Log(err)
+		return nil
+	}
+	defer resp.Body.Close()
+	var stocks = make(map[string]float64)
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		logging.Log(err)
+		return nil
+	}
+	err = json.Unmarshal(data, &stocks)
+	if err != nil {
+		logging.Log(err)
+		return nil
+	}
+	return stocks
+}
+
+// SendStat() takes a Stats struct, converts it to JSON, sends it to the server, and returns an error
+// if there is one
+//
+// @param Stats stat The stats object that you want to send.
+//
+// @return error The response from the server.
+func SendStat(stat Stats) error {
+	client := Client()
+	json, err := json.Marshal(stat)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://%s:%d/api/v1/stats", CFG.Server, CFG.Port), bytes.NewBuffer(json))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Auth-Key", CFG.Apipass)
+	req.Header.Set("Content-type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return nil
+}
+
+// Just a simple wrapper so I can send stats when chaining onto the struct
+func (stat Stats) Send() error {
+	return SendStat(stat)
 }
